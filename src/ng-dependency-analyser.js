@@ -1,28 +1,9 @@
 var utils = require('./utils'),
-    expandFilenames = utils.expandFilenames,
     jsParser = utils.jsParser,
     concatAll = utils.concatAll,
     estraverse = require('estraverse');
 
-if (process.argv.length < 3) {
-    console.error('usage: node ng-dependency-analyser.js <file matcher>');
-    console.error();
-    console.error('examples:');
-    console.error('    node ng-dependency-analyser.js *.js');
-    console.error('    node ng-dependency-analyser.js src/lib/**/**/*.js');
-
-    process.exit(1);
-}
-
-var filenames = expandFilenames(process.argv.slice(2));
-
-extractInjectedInjectables(filenames)
-    .forEach(function (item) {
-        console.log(item);
-    }
-);
-
-function extractInjectedInjectables(filenames) {
+exports.extractInjectedInjectables = function (filenames) {
     var asts = filenames.map(jsParser),
         injectables = asts
             .map(extractInjectables)
@@ -87,4 +68,4 @@ function extractInjectedInjectables(filenames) {
             }
         };
     }
-}
+};
