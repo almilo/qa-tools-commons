@@ -5,7 +5,7 @@ exports.expandFilenames = function (args) {
 };
 
 exports.jsParser = function (filename) {
-    var options = {ecmaVersion: 6, sourcetype: 'module'};
+    var options = {ecmaVersion: 6, sourceType: 'module'};
 
     return parserImplementation(fs.readFileSync(filename), options);
 };
