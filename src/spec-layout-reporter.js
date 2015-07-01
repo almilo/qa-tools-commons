@@ -1,31 +1,6 @@
-var utils = require('./utils'),
-    expandFilenames = utils.expandFilenames,
-    jsParser = utils.jsParser,
-    indent = utils.indent,
-    range = utils.range,
-    estraverse = require('estraverse');
+var utils = require('./utils'), jsParser = utils.jsParser, indent = utils.indent, estraverse = require('estraverse');
 
-if (process.argv.length < 3) {
-    console.error('usage: node spec-layout-reporter.js <file matcher>');
-    console.error();
-    console.error('examples:');
-    console.error(' node spec-layout-reporter.js foo.spec.js');
-    console.error(' node spec-layout-reporter.js src/lib/*.spec.js');
-    console.error(' node spec-layout-reporter.js src/lib/**/**/*.spec.js');
-
-    process.exit(1);
-}
-
-var report = new Report();
-
-expandFilenames(process.argv.slice(2))
-    .forEach(function (filename) {
-        addToReport(filename, report);
-    });
-
-report.render();
-
-function addToReport(filename, report) {
+exports.addToReport = function (filename, report) {
     var indentationLevel = 0;
 
     report.addEntry(0, 'File: ' + filename);
@@ -55,9 +30,9 @@ function addToReport(filename, report) {
     function functionCall(node) {
         return node.type === 'CallExpression' && node.callee.type === 'Identifier' ? node.callee.name : undefined;
     }
-}
+};
 
-function Report() {
+exports.Report = function () {
     var entries = [];
 
     this.addEntry = function (indentationLevel, text) {
@@ -78,7 +53,7 @@ function Report() {
             text: text
         };
     }
-}
+};
 
 function consoleRenderer(report) {
     report.getEntries().forEach(function (entry) {
@@ -86,7 +61,9 @@ function consoleRenderer(report) {
     });
 }
 
-function htmlRenderer(report) {
+exports.consoleRenderer = consoleRenderer;
+
+exports.htmlRenderer = function (report) {
     console.log('<!DOCTYPE html><html><body><pre>');
 
     report.getEntries().forEach(function (entry) {
@@ -94,5 +71,4 @@ function htmlRenderer(report) {
     });
 
     console.log('</pre></body></html>');
-}
-
+};
