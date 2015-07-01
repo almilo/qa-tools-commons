@@ -4,7 +4,7 @@
   "description": "QA Tools for JS and Angular",
   "author": "almilo@almilo.es",
   "license": "MIT",
-  "devDependencies": {
+  "dependencies": {
     "acorn": "^2.0.4",
     "estraverse": "^4.1.0",
     "glob": "^5.0.12"
