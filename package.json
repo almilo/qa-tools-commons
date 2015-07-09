@@ -4,6 +4,7 @@
   "description": "QA Tools for JS and Angular",
   "author": "almilo@almilo.es",
   "license": "MIT",
+  "repository": "https://github.com/almilo/qa-tools-commons.git",
   "bin": {
     "slr": "bin/slr.js",
     "ngda": "bin/ngda.js"
