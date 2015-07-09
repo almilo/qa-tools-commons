@@ -1,14 +1,14 @@
 #! /usr/bin/env node
 
-if (process.argv.length < 3) {
-    console.error('usage: ngda <file matcher>');
-    console.error();
-    console.error('examples:');
-    console.error('    ngda *.js');
-    console.error('    ngda src/lib/**/**/*.js');
+var assert = require('../src/utils').assert;
 
-    process.exit(1);
-}
+assert(process.argv.length >= 3, [
+    'usage: ngda <file matcher>',
+    '',
+    'examples:',
+    '    ngda *.js',
+    '    ngda src/lib/**/**/*.js'
+]);
 
 var expandFilenames = require('../src/utils').expandFilenames,
     extractInjectedInjectables = require('../src/ng-dependency-analyser').extractInjectedInjectables,

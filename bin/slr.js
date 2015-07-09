@@ -1,15 +1,15 @@
 #! /usr/bin/env node
 
-if (process.argv.length < 3) {
-    console.error('usage: slr <file matcher>');
-    console.error();
-    console.error('examples:');
-    console.error('    slr foo.spec.js');
-    console.error('    slr src/lib/*.spec.js');
-    console.error('    slr src/lib/**/**/*.spec.js');
+var assert = require('../src/utils').assert;
 
-    process.exit(1);
-}
+assert(process.argv.length >= 3, [
+    'usage: slr <file matcher>',
+    '',
+    'examples:',
+    '    slr foo.spec.js',
+    '    slr src/lib/*.spec.js',
+    '    slr src/lib/**/**/*.spec.js'
+]);
 
 var expandFilenames = require('../src/utils').expandFilenames,
     slr = require('../src/spec-layout-reporter'), Report = slr.Report, addToReport = slr.addToReport,

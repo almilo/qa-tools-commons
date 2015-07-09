@@ -1,4 +1,4 @@
-var utils = require('./utils'), jsParser = utils.jsParser, indent = utils.indent, estraverse = require('estraverse');
+var utils = require('../utils'), jsParser = utils.jsParser, indent = utils.indent, estraverse = require('estraverse');
 
 exports.addToReport = function (filename, report) {
     var indentationLevel = 0;

@@ -17,3 +17,13 @@ exports.concatAll = function (accumulated, current) {
 exports.indent = function (indentationLevel, text) {
     return _.repeat(' ', indentationLevel * 4) + text;
 };
+
+exports.assert = function (condition, lines) {
+    if (!condition) {
+        lines.map(function (line) {
+            console.error(line);
+        });
+
+        process.exit(1);
+    }
+};

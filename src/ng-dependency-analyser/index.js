@@ -1,4 +1,4 @@
-var utils = require('./utils'),
+var utils = require('../utils'),
     jsParser = utils.jsParser,
     concatAll = utils.concatAll,
     estraverse = require('estraverse');
