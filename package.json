@@ -11,6 +11,7 @@
   "dependencies": {
     "acorn": "^2.0.4",
     "estraverse": "^4.1.0",
-    "glob": "^5.0.12"
+    "glob": "^5.0.12",
+    "lodash": "^3.10.0"
   }
 }

@@ -1,4 +1,4 @@
-var fs = require('fs'), glob = require('glob'), parserImplementation = require('acorn').parse;
+var _ = require('lodash'), fs = require('fs'), glob = require('glob'), parserImplementation = require('acorn').parse;
 
 exports.expandFilenames = function (args) {
     return glob.hasMagic(args[0]) ? glob.sync(args[0]) : args;
@@ -15,15 +15,5 @@ exports.concatAll = function (accumulated, current) {
 };
 
 exports.indent = function (indentationLevel, text) {
-    return indentation(indentationLevel) + text;
-
-    function indentation(indentationLevel) {
-        return range(indentationLevel).reduce(function (accumulated) {
-            return accumulated + '    ';
-        }, '');
-    }
+    return _.repeat(' ', indentationLevel * 4) + text;
 };
-
-function range(length) {
-    return Array.apply(null, new Array(length));
-}
