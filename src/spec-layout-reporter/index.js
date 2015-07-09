@@ -1,5 +1,5 @@
 var utils = require('../utils'), jsParser = utils.jsParser, estraverse = require('estraverse'),
-    defaultRenderer = require('./html-renderer');
+    defaultRenderer = require('./console-renderer');
 
 exports.Report = function () {
     var entries = [];
