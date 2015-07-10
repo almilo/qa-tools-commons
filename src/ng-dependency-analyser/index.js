@@ -53,7 +53,7 @@ function extractModuleDefinition(filenames) {
                     importsNamesAndIdentifiers.push(importNameAndIdentifiers);
                 }
 
-                var moduleNameAndRequires = extractModuleNameAndRequires(node);
+                var moduleNameAndRequires = extractModuleNameAndRequires(node, filename);
 
                 if (moduleNameAndRequires) {
                     assert(!module, 'Error, more than one module defined in: "' + filename + '".');
@@ -72,7 +72,7 @@ function extractModuleDefinition(filenames) {
                     if (module) {
                         module.injectables.push(injectableName);
                     } else {
-                        console.warn('Found injectable: "' + injectableName + '" without current module.');
+                        console.warn('Warning, found injectable: "' + injectableName + '" without current module in: "' + filename + '".');
                     }
                 }
             }
@@ -133,13 +133,13 @@ function extractInjected(injectables, filenames) {
 }
 
 function extractInjectableName(node) {
-    var injectables = ['factory', 'service', 'provider', 'directive'], calledMember = memberCall(node);
+    var injectables = ['factory', 'service', 'provider', 'directive', 'controller'], calledMember = memberCall(node);
 
     return injectables.indexOf(calledMember) >= 0 && node.arguments[0].value;
 }
 
 
-function extractModuleNameAndRequires(node) {
+function extractModuleNameAndRequires(node, filename) {
     var calledMember = memberCall(node);
 
     if (calledMember === 'module' && node.arguments.length > 0 && node.arguments[0].type === 'Literal') {
@@ -147,6 +147,10 @@ function extractModuleNameAndRequires(node) {
 
         if (name) {
             var elements = (node.arguments[1] && node.arguments[1].type === 'ArrayExpression' && node.arguments[1].elements) || [];
+
+            if (node.arguments[1] && node.arguments[1].type !== 'ArrayExpression') {
+                console.warn('Warning, found non-array expression as module requires in: "' + filename + '".');
+            }
 
             return {name: name, requires: elements.map(extractIdentifier)};
         }
