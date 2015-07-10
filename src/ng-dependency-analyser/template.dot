@@ -1,9 +1,23 @@
 digraph modules {
   {{~it.getModules() :module}}
-    "{{= module}}"
+    "{{= module.name}}" [shape="box"]
+    {{~module.injectables :injectable}}
+    "{{= injectable}}" [shape="oval"]
+    {{~}}
+  {{~}}
+
+  {{~it.getModules() :module}}
+    {{~module.injectables :injectable}}
+    "{{= module.name}}" -> "{{= injectable }}" [label="defines"]
+    {{~}}
   {{~}}
 
   {{~it.getInjectedDependencies() :injectedDependency}}
-    "{{= injectedDependency.filename }}" -> "{{= injectedDependency.dependency }}"
+  "{{= injectedDependency.filename }}" [shape="plaintext"]
+  "{{= injectedDependency.injectable }}" [shape="oval"]
+  {{~}}
+
+  {{~it.getInjectedDependencies() :injectedDependency}}
+  "{{= injectedDependency.injectable }}" -> "{{= injectedDependency.filename }}" [label="is used in"]
   {{~}}
 }

@@ -42,14 +42,26 @@ function extractModules(asts, filenames) {
 
 function extractModuleDefinitions(filenames) {
     return function (ast, index) {
-        var modules = [];
+        var modules = [], currentModule;
 
         estraverse.traverse(ast, {
-            enter: function (node) {
-                var calledMember = memberCall(node);
+            leave: function (node) {
+                var moduleName = extractModuleName(node);
 
-                if (calledMember === 'module' && node.arguments.length > 1 && node.arguments[0].type === 'Literal') {
-                    modules.push(node.arguments[0].value);
+                if (moduleName) {
+                    currentModule = {name: moduleName, injectables: []};
+
+                    modules.push(currentModule);
+                }
+
+                var injectableName = extractInjectableName(node);
+
+                if (injectableName) {
+                    if (currentModule) {
+                        currentModule.injectables.push(injectableName);
+                    } else {
+                        console.warn('Found injectable: "' + injectableName + '" without current module.');
+                    }
                 }
             }
         });
@@ -63,10 +75,10 @@ function extractInjectables(ast) {
 
     estraverse.traverse(ast, {
         enter: function (node) {
-            var calledMember = memberCall(node);
+            var injectableName = extractInjectableName(node);
 
-            if (calledMember === 'factory' || calledMember === 'service' || calledMember === 'provider') {
-                injectables.push(node.arguments[0].value);
+            if (injectableName) {
+                injectables.push(injectableName);
             }
         }
     });
@@ -84,7 +96,7 @@ function extractInjected(injectables, filenames) {
 
                 injectableCandidates.forEach(function (injectableCandidate) {
                     if (injectables.indexOf(injectableCandidate) >= 0) {
-                        injected.push({filename: filenames[index], dependency: injectableCandidate});
+                        injected.push({filename: filenames[index], injectable: injectableCandidate});
                     }
                 });
             }
@@ -92,6 +104,19 @@ function extractInjected(injectables, filenames) {
 
         return injected;
     };
+}
+
+function extractInjectableName(node) {
+    var calledMember = memberCall(node);
+
+    return (calledMember === 'factory' || calledMember === 'service' || calledMember === 'provider') && node.arguments[0].value;
+}
+
+
+function extractModuleName(node) {
+    var calledMember = memberCall(node);
+
+    return (calledMember === 'module' && node.arguments.length > 0 && node.arguments[0].type === 'Literal') && node.arguments[0].value;
 }
 
 function memberCall(node) {
