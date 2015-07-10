@@ -1,5 +1,6 @@
-var _ = require('lodash'), utils = require('../utils'), jsParser = utils.jsParser, concatAll = utils.concatAll,
-    estraverse = require('estraverse'), defaultRenderer = require('./console-renderer');
+var _ = require('lodash'), path = require('path'), utils = require('../utils'), jsParser = utils.jsParser,
+    concatAll = utils.concatAll, assert = utils.assert, estraverse = require('estraverse'),
+    defaultRenderer = require('./console-renderer');
 
 exports.Report = function (filenames) {
     var asts = filenames.map(jsParser);
@@ -36,29 +37,40 @@ function extractInjectedDependencies(asts, filenames) {
 
 function extractModules(asts, filenames) {
     return asts
-        .map(extractModuleDefinitions(filenames))
+        .map(extractModuleDefinition(filenames))
         .reduce(concatAll, []);
 }
 
-function extractModuleDefinitions(filenames) {
+function extractModuleDefinition(filenames) {
     return function (ast, index) {
-        var modules = [], currentModule;
+        var module = undefined, filename = filenames[index], importName = getImportName(filename), importsNamesAndIdentifiers = [];
 
         estraverse.traverse(ast, {
             leave: function (node) {
-                var moduleName = extractModuleName(node);
+                var importNameAndIdentifiers = extractImportNameAndIdentifiers(node);
 
-                if (moduleName) {
-                    currentModule = {name: moduleName, injectables: []};
+                if (importNameAndIdentifiers) {
+                    importsNamesAndIdentifiers.push(importNameAndIdentifiers);
+                }
 
-                    modules.push(currentModule);
+                var moduleNameAndRequires = extractModuleNameAndRequires(node);
+
+                if (moduleNameAndRequires) {
+                    assert(!module, 'Error, more than one module defined in: "' + filename + '".');
+
+                    module = {
+                        name: moduleNameAndRequires.name,
+                        requires: moduleNameAndRequires.requires,
+                        injectables: [],
+                        importName: importName
+                    };
                 }
 
                 var injectableName = extractInjectableName(node);
 
                 if (injectableName) {
-                    if (currentModule) {
-                        currentModule.injectables.push(injectableName);
+                    if (module) {
+                        module.injectables.push(injectableName);
                     } else {
                         console.warn('Found injectable: "' + injectableName + '" without current module.');
                     }
@@ -66,8 +78,22 @@ function extractModuleDefinitions(filenames) {
             }
         });
 
-        return modules;
+        return module && resolveRequiredDependencies(module, importsNamesAndIdentifiers);
     };
+}
+
+function resolveRequiredDependencies(module, importsNamesAndIdentifiers) {
+    module.requires = module.requires.map(resolve);
+
+    return module;
+
+    function resolve(requireIdentifier) {
+        var importNameAndIdentifiers = _.find(importsNamesAndIdentifiers, function (importNameAndIdentifiers) {
+            return importNameAndIdentifiers.identifiers.indexOf(requireIdentifier) >= 0;
+        });
+
+        return importNameAndIdentifiers && importNameAndIdentifiers.importName;
+    }
 }
 
 function extractInjectables(ast) {
@@ -107,16 +133,48 @@ function extractInjected(injectables, filenames) {
 }
 
 function extractInjectableName(node) {
-    var calledMember = memberCall(node);
+    var injectables = ['factory', 'service', 'provider', 'directive'], calledMember = memberCall(node);
 
-    return (calledMember === 'factory' || calledMember === 'service' || calledMember === 'provider') && node.arguments[0].value;
+    return injectables.indexOf(calledMember) >= 0 && node.arguments[0].value;
 }
 
 
-function extractModuleName(node) {
+function extractModuleNameAndRequires(node) {
     var calledMember = memberCall(node);
 
-    return (calledMember === 'module' && node.arguments.length > 0 && node.arguments[0].type === 'Literal') && node.arguments[0].value;
+    if (calledMember === 'module' && node.arguments.length > 0 && node.arguments[0].type === 'Literal') {
+        var name = node.arguments[0].value;
+
+        if (name) {
+            var elements = (node.arguments[1] && node.arguments[1].type === 'ArrayExpression' && node.arguments[1].elements) || [];
+
+            return {name: name, requires: elements.map(extractIdentifier)};
+        }
+    }
+
+    function extractIdentifier(node) {
+        return (node.type = 'MemberExpression' && node.object && node.object.name) || (node.type = 'Indentifier' && node.name);
+    }
+}
+
+function extractImportNameAndIdentifiers(node) {
+    var importSourceAndSpecifiers = importDeclaration(node);
+
+    if (importSourceAndSpecifiers) {
+        var name = importSourceAndSpecifiers.source.value, identifiers = [];
+
+        importSourceAndSpecifiers.specifiers.forEach(function (specifier) {
+            identifiers.push(specifier.local.name);
+        });
+
+        return {importName: getImportName(name), identifiers: identifiers};
+    }
+}
+
+function importDeclaration(node) {
+    if (node.type === 'ImportDeclaration') {
+        return {source: node.source, specifiers: node.specifiers};
+    }
 }
 
 function memberCall(node) {
@@ -131,4 +189,8 @@ function functionParameterNames(node) {
     if (node.type === 'FunctionDeclaration' || node.type === 'FunctionExpression') {
         return _.pluck(node.params, 'name');
     }
+}
+
+function getImportName(filename) {
+    return path.basename(filename, path.extname(filename));
 }

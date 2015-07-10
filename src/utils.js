@@ -11,7 +11,7 @@ exports.jsParser = function (filename) {
 };
 
 exports.concatAll = function (accumulated, current) {
-    return accumulated.concat(current);
+    return current ? accumulated.concat(current) : accumulated;
 };
 
 exports.indent = function (indentationLevel, text) {

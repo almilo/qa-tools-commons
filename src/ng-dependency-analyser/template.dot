@@ -1,14 +1,20 @@
 digraph modules {
   {{~it.getModules() :module}}
-    "{{= module.name}}" [shape="box"]
+    "{{= module.importName}}" [shape="box", label="{{= module.name}}"]
     {{~module.injectables :injectable}}
     "{{= injectable}}" [shape="oval"]
     {{~}}
   {{~}}
 
   {{~it.getModules() :module}}
+    {{~module.requires :required}}
+    "{{= module.importName}}" -> "{{= required }}" [label="requires"]
+    {{~}}
+  {{~}}
+
+  {{~it.getModules() :module}}
     {{~module.injectables :injectable}}
-    "{{= module.name}}" -> "{{= injectable }}" [label="defines"]
+    "{{= module.importName}}" -> "{{= injectable }}" [label="defines"]
     {{~}}
   {{~}}
 

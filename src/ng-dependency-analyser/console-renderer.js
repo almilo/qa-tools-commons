@@ -5,15 +5,23 @@ module.exports = function consoleRenderer(report) {
     report.getModules().forEach(function (module) {
         console.log(module.name);
 
-        module.injectables.forEach(function(injectable) {
-            console.log(indent(1, injectable));
-        });
+        renderCollection('requires:', module.requires);
+        renderCollection('provides:', module.injectables);
     });
 
     console.log();
 
     console.log('Injected dependencies:');
     report.getInjectedDependencies().forEach(function (entry) {
-        console.log(entry.injectable + ' => ' + entry.filename);
+        console.log(entry.injectable + ' is used in "' + entry.filename + '"');
     });
+
+    function renderCollection(title, collection) {
+        if (collection.length > 0) {
+            console.log(indent(1, title));
+            collection.forEach(function (item) {
+                console.log(indent(2, item));
+            });
+        }
+    }
 };
