@@ -1,7 +1,11 @@
 var _ = require('lodash'), fs = require('fs'), glob = require('glob'), parserImplementation = require('acorn').parse;
 
 exports.expandFilenames = function (args) {
-    return glob.hasMagic(args[0]) ? glob.sync(args[0]) : args;
+    return glob.hasMagic(args[0]) ? glob.sync(args[0]).filter(specs) : args;
+
+    function specs(filename) {
+        return filename.match(/\.spec\.js$/) === null;
+    }
 };
 
 exports.jsParser = function (filename) {
