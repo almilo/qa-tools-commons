@@ -1,7 +1,8 @@
 #! /usr/bin/env node
 
 var _ = require('lodash'), assert = require('../src/utils').assert,
-    expandFilenames = require('../src/utils').expandFilenames, Report = require('../src/spec-layout-reporter').Report;
+    utils = require('../src/utils'), expandFilenames = utils.expandFilenames, processOption = utils.processOption,
+    Report = require('../src/spec-layout-reporter').Report;
 
 assert(process.argv.length >= 3, [
     'usage: slr <file matcher>',
@@ -22,17 +23,7 @@ expandFilenames(params)
 report.render(options.renderer);
 
 function processParams(params) {
-    return _.extend({}, processOption(params, '--html'));
+    var htmlOption = processOption(params, '--html', {renderer: require('../src/spec-layout-reporter/html-renderer')});
 
-    function processOption(params, optionParam) {
-        var option = {}, optionIndex = params.indexOf(optionParam);
-
-        if (optionIndex >= 0) {
-            params.splice(optionIndex, 1);
-
-            option.renderer = require('../src/spec-layout-reporter/html-renderer');
-        }
-
-        return option
-    }
+    return _.extend({}, htmlOption);
 }
