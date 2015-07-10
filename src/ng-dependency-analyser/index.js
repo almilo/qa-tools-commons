@@ -1,11 +1,18 @@
-var utils = require('../utils'), jsParser = utils.jsParser, concatAll = utils.concatAll,
+var _ = require('lodash'), utils = require('../utils'), jsParser = utils.jsParser, concatAll = utils.concatAll,
     estraverse = require('estraverse'), defaultRenderer = require('./console-renderer');
 
 exports.Report = function (filenames) {
-    this.entries = extractInjectedInjectables(filenames);
+    var asts = filenames.map(jsParser);
 
-    this.getEntries = function () {
-        return this.entries;
+    this.injectedDependencies = extractInjectedDependencies(asts, filenames);
+    this.modules = extractModules(asts, filenames);
+
+    this.getInjectedDependencies = function () {
+        return this.injectedDependencies;
+    };
+
+    this.getModules = function () {
+        return this.modules;
     };
 
     this.render = function () {
@@ -17,69 +24,86 @@ exports.Report = function (filenames) {
     };
 };
 
-function extractInjectedInjectables(filenames) {
-    var asts = filenames.map(jsParser),
-        injectables = asts
-            .map(extractInjectables)
-            .reduce(concatAll, []);
+function extractInjectedDependencies(asts, filenames) {
+    var injectables = asts
+        .map(extractInjectables)
+        .reduce(concatAll, []);
 
     return asts
         .map(extractInjected(injectables, filenames))
         .reduce(concatAll, []);
+}
 
-    function extractInjectables(ast) {
-        var injectables = [];
+function extractModules(asts, filenames) {
+    return asts
+        .map(extractModuleDefinitions(filenames))
+        .reduce(concatAll, []);
+}
+
+function extractModuleDefinitions(filenames) {
+    return function (ast, index) {
+        var modules = [];
 
         estraverse.traverse(ast, {
             enter: function (node) {
                 var calledMember = memberCall(node);
 
-                if (calledMember === 'factory' || calledMember === 'service' || calledMember === 'provider') {
-                    injectables.push(node.arguments[0].value);
+                if (calledMember === 'module' && node.arguments.length > 1 && node.arguments[0].type === 'Literal') {
+                    modules.push(node.arguments[0].value);
                 }
             }
         });
 
-        return injectables;
+        return modules;
+    };
+}
 
-        function memberCall(node) {
-            if (node.type === 'CallExpression') {
-                var callee = node.callee;
+function extractInjectables(ast) {
+    var injectables = [];
 
-                return callee.type === 'MemberExpression' && callee.property.type === 'Identifier' ? callee.property.name : undefined;
-            } else {
-                return undefined;
+    estraverse.traverse(ast, {
+        enter: function (node) {
+            var calledMember = memberCall(node);
+
+            if (calledMember === 'factory' || calledMember === 'service' || calledMember === 'provider') {
+                injectables.push(node.arguments[0].value);
             }
         }
-    }
+    });
 
-    function extractInjected(injectables, filenames) {
-        return function (ast, index) {
-            var injected = [];
+    return injectables;
+}
 
-            estraverse.traverse(ast, {
-                enter: function (node) {
-                    var injectableCandidates = functionParameterNames(node);
+function extractInjected(injectables, filenames) {
+    return function (ast, index) {
+        var injected = [];
 
-                    if (injectableCandidates) {
-                        injectableCandidates.forEach(function (injectableCandidate) {
-                            if (injectables.indexOf(injectableCandidate) >= 0) {
-                                injected.push({filename: filenames[index], dependency: injectableCandidate});
-                            }
-                        });
+        estraverse.traverse(ast, {
+            enter: function (node) {
+                var injectableCandidates = functionParameterNames(node) || [];
+
+                injectableCandidates.forEach(function (injectableCandidate) {
+                    if (injectables.indexOf(injectableCandidate) >= 0) {
+                        injected.push({filename: filenames[index], dependency: injectableCandidate});
                     }
-                }
-            });
-
-            return injected;
-
-            function functionParameterNames(node) {
-                if (node.type === 'FunctionDeclaration' || node.type === 'FunctionExpression') {
-                    return node.params.map(function (param) {
-                        return param.name;
-                    });
-                }
+                });
             }
-        };
+        });
+
+        return injected;
+    };
+}
+
+function memberCall(node) {
+    if (node.type === 'CallExpression') {
+        var callee = node.callee;
+
+        return (callee.type === 'MemberExpression' && callee.property.type === 'Identifier') && callee.property.name;
     }
-};
+}
+
+function functionParameterNames(node) {
+    if (node.type === 'FunctionDeclaration' || node.type === 'FunctionExpression') {
+        return _.pluck(node.params, 'name');
+    }
+}

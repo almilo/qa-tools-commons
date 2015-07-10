@@ -12,7 +12,7 @@ module.exports = function (report, outputFilename, overwrite) {
         'Error, the output file: "' + outputFilename + '" must not exist or overwrite must be set.'
     ]);
 
-    fs.writeFileSync(tempDotFilename, dotTemplate({entries: report.getEntries()}));
+    fs.writeFileSync(tempDotFilename, dotTemplate(report));
 
     var dotExitCode = shelljs.exec(dotCommand).code;
 

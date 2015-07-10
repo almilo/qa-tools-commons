@@ -1,5 +1,9 @@
-digraph dependencies {
-  {{~it.entries :entry}}
-    "{{= entry.filename }}" -> "{{= entry.dependency }}"
+digraph modules {
+  {{~it.getModules() :module}}
+    "{{= module}}"
+  {{~}}
+
+  {{~it.getInjectedDependencies() :injectedDependency}}
+    "{{= injectedDependency.filename }}" -> "{{= injectedDependency.dependency }}"
   {{~}}
 }
