@@ -5,7 +5,7 @@ digraph modules {
     "{{= required}}" [shape="box"]
     {{~}}
     {{~module.injectables :injectable}}
-    "{{= injectable}}" [shape="oval"]
+    "{{= injectable.importName}}" [shape="oval", label="{{= injectable.name}}"]
     {{~}}
   {{~}}
 
@@ -17,16 +17,20 @@ digraph modules {
 
   {{~it.getModules() :module}}
     {{~module.injectables :injectable}}
-    "{{= module.importName}}" -> "{{= injectable }}"
+    "{{= module.importName}}" -> "{{= injectable.importName }}" [label="defines"]
     {{~}}
   {{~}}
 
   {{~it.getInjectedDependencies() :injectedDependency}}
-  "{{= injectedDependency.filename }}" [shape="plaintext"]
-  "{{= injectedDependency.injectable }}" [shape="oval"]
+  "{{= injectedDependency.importName }}" [shape="oval"]
+  {{~injectedDependency.injectables :injectable}}
+  "{{= injectable.importName}}" [shape="oval", label="{{= injectable.name}}"]
+  {{~}}
   {{~}}
 
   {{~it.getInjectedDependencies() :injectedDependency}}
-  "{{= injectedDependency.injectable }}" -> "{{= injectedDependency.filename }}" [label="is used in"]
+  {{~injectedDependency.injectables :injectable}}
+  "{{= injectedDependency.importName }}" -> "{{= injectable.importName }}" [label="uses"]
+  {{~}}
   {{~}}
 }

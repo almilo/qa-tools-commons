@@ -6,21 +6,26 @@ module.exports = function consoleRenderer(report) {
         console.log(module.name);
 
         renderCollection('requires:', module.requires);
-        renderCollection('provides:', module.injectables);
+        renderCollection('provides:', module.injectables, 'name');
     });
 
     console.log();
 
-    console.log('Injected dependencies:');
-    report.getInjectedDependencies().forEach(function (entry) {
-        console.log(entry.injectable + ' is used in "' + entry.filename + '"');
+    console.log('Dependencies:');
+    report.getInjectedDependencies().forEach(function (dependency) {
+        console.log(dependency.importName + ' uses:');
+        dependency.injectables.forEach(function (injectable) {
+            console.log(indent(1, injectable.name));
+        });
     });
 
-    function renderCollection(title, collection) {
+    function renderCollection(title, collection, property) {
         if (collection.length > 0) {
             console.log(indent(1, title));
             collection.forEach(function (item) {
-                console.log(indent(2, item));
+                var text = property ? item[property] : item;
+
+                console.log(indent(2, text));
             });
         }
     }

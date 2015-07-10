@@ -1,6 +1,8 @@
 var path = require('path'), fs = require('fs'), dot = require('dot'), shelljs = require('shelljs'),
     assert = require('../utils').assert;
 
+dot.templateSettings.strip = false;
+
 module.exports = function (report, outputFilename, overwrite) {
     assert(outputFilename, 'Error: no output file name has been provided to the jpeg renderer.');
 

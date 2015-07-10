@@ -43,7 +43,7 @@ function extractModules(asts, filenames) {
 
 function extractModuleDefinition(filenames) {
     return function (ast, index) {
-        var module = undefined, filename = filenames[index], importName = getImportName(filename), importsNamesAndIdentifiers = [];
+        var module = undefined, importsNamesAndIdentifiers = [], filename = filenames[index], importName = getImportName(filename);
 
         estraverse.traverse(ast, {
             leave: function (node) {
@@ -78,29 +78,36 @@ function extractModuleDefinition(filenames) {
             }
         });
 
-        return module && resolveRequiredDependencies(module, importsNamesAndIdentifiers);
+        return module && resolveDependenciesToImportNames(module, importsNamesAndIdentifiers);
     };
-}
 
-function resolveRequiredDependencies(module, importsNamesAndIdentifiers) {
-    module.requires = module.requires.map(resolve);
+    function resolveDependenciesToImportNames(module, importsNamesAndIdentifiers) {
+        module.requires = module.requires.map(resolveRequire);
+        module.injectables = module.injectables.map(resolveInjectable);
 
-    return module;
+        return module;
 
-    function resolve(requireIdentifier) {
-        var importNameAndIdentifiers = _.find(importsNamesAndIdentifiers, function (importNameAndIdentifiers) {
-            return importNameAndIdentifiers.identifiers.indexOf(requireIdentifier) >= 0;
-        });
+        function resolveRequire(require) {
+            return resolveImport(require, importsNamesAndIdentifiers);
+        }
 
-        return importNameAndIdentifiers && importNameAndIdentifiers.importName;
+        function resolveInjectable(injectableName) {
+            return {name: injectableName, importName: resolveImport(injectableName, importsNamesAndIdentifiers)};
+        }
     }
 }
 
 function extractInjectables(ast) {
-    var injectables = [];
+    var injectables = [], importsNamesAndIdentifiers = [];
 
     estraverse.traverse(ast, {
         enter: function (node) {
+            var importNameAndIdentifiers = extractImportNameAndIdentifiers(node);
+
+            if (importNameAndIdentifiers) {
+                importsNamesAndIdentifiers.push(importNameAndIdentifiers);
+            }
+
             var injectableName = extractInjectableName(node);
 
             if (injectableName) {
@@ -109,26 +116,45 @@ function extractInjectables(ast) {
         }
     });
 
-    return injectables;
+    return resolveDependenciesToImportNames(injectables, importsNamesAndIdentifiers);
+
+    function resolveDependenciesToImportNames(injectables, importsNamesAndIdentifiers) {
+        return injectables.map(resolveInjectable);
+
+        function resolveInjectable(injectableName) {
+            return {name: injectableName, importName: resolveImport(injectableName, importsNamesAndIdentifiers)};
+        }
+    }
 }
 
 function extractInjected(injectables, filenames) {
     return function (ast, index) {
-        var injected = [];
+        var injectedDependencies = undefined, filename = filenames[index], importName = getImportName(filename);
 
         estraverse.traverse(ast, {
             enter: function (node) {
-                var injectableCandidates = functionParameterNames(node) || [];
+                var injectableCandidateNames = functionParameterNames(node) || [];
 
-                injectableCandidates.forEach(function (injectableCandidate) {
-                    if (injectables.indexOf(injectableCandidate) >= 0) {
-                        injected.push({filename: filenames[index], injectable: injectableCandidate});
+                injectableCandidateNames.forEach(function (injectableCandidateName) {
+                    var injectable = _.find(injectables, function (injectable) {
+                        return injectable.name === injectableCandidateName;
+                    });
+
+                    if (injectable) {
+                        if (!injectedDependencies) {
+                            injectedDependencies = {
+                                importName: importName,
+                                injectables: []
+                            }
+                        }
+
+                        injectedDependencies.injectables.push(injectable);
                     }
                 });
             }
         });
 
-        return injected;
+        return injectedDependencies;
     };
 }
 
@@ -137,7 +163,6 @@ function extractInjectableName(node) {
 
     return injectables.indexOf(calledMember) >= 0 && node.arguments[0].value;
 }
-
 
 function extractModuleNameAndRequires(node, filename) {
     var calledMember = memberCall(node);
@@ -197,4 +222,17 @@ function functionParameterNames(node) {
 
 function getImportName(filename) {
     return path.basename(filename, path.extname(filename));
+}
+
+function resolveImport(identifier, importsNamesAndIdentifiers) {
+    var importNameAndIdentifiers = _.find(importsNamesAndIdentifiers, function (importNameAndIdentifiers) {
+        return importNameAndIdentifiers.identifiers.indexOf(identifier) >= 0 ||
+            importNameAndIdentifiers.identifiers.indexOf(identifier + 'Directive') >= 0;
+    });
+
+    if (!importNameAndIdentifiers) {
+        console.warn('Warning, could not resolve import for identifier: "' + identifier + '".');
+    }
+
+    return importNameAndIdentifiers && importNameAndIdentifiers.importName;
 }
