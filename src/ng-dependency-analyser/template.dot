@@ -1,6 +1,9 @@
 digraph modules {
   {{~it.getModules() :module}}
     "{{= module.importName}}" [shape="box", label="{{= module.name}}"]
+    {{~module.requires :required}}
+    "{{= required}}" [shape="box"]
+    {{~}}
     {{~module.injectables :injectable}}
     "{{= injectable}}" [shape="oval"]
     {{~}}
@@ -8,13 +11,13 @@ digraph modules {
 
   {{~it.getModules() :module}}
     {{~module.requires :required}}
-    "{{= module.importName}}" -> "{{= required }}" [label="requires"]
+    "{{= module.importName}}" -> "{{= required }}"
     {{~}}
   {{~}}
 
   {{~it.getModules() :module}}
     {{~module.injectables :injectable}}
-    "{{= module.importName}}" -> "{{= injectable }}" [label="defines"]
+    "{{= module.importName}}" -> "{{= injectable }}"
     {{~}}
   {{~}}
 
