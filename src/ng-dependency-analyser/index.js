@@ -1,6 +1,6 @@
 var _ = require('lodash'), path = require('path'), utils = require('../utils'), jsParser = utils.jsParser,
     concatAll = utils.concatAll, assert = utils.assert, estraverse = require('estraverse'),
-    defaultRenderer = require('./console-renderer');
+    defaultRenderer = require('./rendering/console-renderer');
 
 exports.Report = function (filenames) {
     var asts = filenames.map(jsParser);
