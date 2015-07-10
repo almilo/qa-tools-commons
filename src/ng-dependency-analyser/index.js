@@ -1,9 +1,23 @@
-var utils = require('../utils'),
-    jsParser = utils.jsParser,
-    concatAll = utils.concatAll,
-    estraverse = require('estraverse');
+var utils = require('../utils'), jsParser = utils.jsParser, concatAll = utils.concatAll,
+    estraverse = require('estraverse'), defaultRenderer = require('./console-renderer');
 
-exports.extractInjectedInjectables = function (filenames) {
+exports.Report = function (filenames) {
+    this.entries = extractInjectedInjectables(filenames);
+
+    this.getEntries = function () {
+        return this.entries;
+    };
+
+    this.render = function () {
+        var renderer = arguments[0];
+
+        arguments[0] = this;
+
+        (renderer || defaultRenderer).apply(undefined, arguments);
+    };
+};
+
+function extractInjectedInjectables(filenames) {
     var asts = filenames.map(jsParser),
         injectables = asts
             .map(extractInjectables)
@@ -50,7 +64,7 @@ exports.extractInjectedInjectables = function (filenames) {
                     if (injectableCandidates) {
                         injectableCandidates.forEach(function (injectableCandidate) {
                             if (injectables.indexOf(injectableCandidate) >= 0) {
-                                injected.push(filenames[index] + ' => ' + injectableCandidate);
+                                injected.push({filename: filenames[index], dependency: injectableCandidate});
                             }
                         });
                     }

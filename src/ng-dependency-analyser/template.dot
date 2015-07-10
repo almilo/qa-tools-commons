@@ -1,0 +1,5 @@
+digraph dependencies {
+  {{~it.entries :entry}}
+    "{{= entry.filename }}" -> "{{= entry.dependency }}"
+  {{~}}
+}
