@@ -1,5 +1,5 @@
 var _ = require('lodash'), path = require('path'), utils = require('../utils'), jsParser = utils.jsParser,
-    concatAll = utils.concatAll, assert = utils.assert, estraverse = require('estraverse'),
+    concatAll = utils.concatAll, assert = utils.assert, asArray = utils.asArray, estraverse = require('estraverse'),
     defaultRenderer = require('./rendering/console-renderer');
 
 exports.Report = function (filenames) {
@@ -31,17 +31,17 @@ function extractInjectedDependencies(asts, filenames) {
         .reduce(concatAll, []);
 
     return asts
-        .map(extractInjected(injectables, filenames))
+        .map(extractInjectedInjectables(injectables, filenames))
         .reduce(concatAll, []);
 }
 
 function extractModules(asts, filenames) {
     return asts
-        .map(extractModuleDefinition(filenames))
+        .map(extractModuleDefinitions(filenames))
         .reduce(concatAll, []);
 }
 
-function extractModuleDefinition(filenames) {
+function extractModuleDefinitions(filenames) {
     return function (ast, index) {
         var module = undefined, importsNamesAndIdentifiers = [], filename = filenames[index], importName = getImportName(filename);
 
@@ -113,6 +113,12 @@ function extractInjectables(ast) {
             if (injectableName) {
                 injectables.push(injectableName);
             }
+
+            var injectedControllerIdentifier = extractControllerIdentifier(node);
+
+            if (injectedControllerIdentifier) {
+                injectables.push(injectedControllerIdentifier);
+            }
         }
     });
 
@@ -127,13 +133,15 @@ function extractInjectables(ast) {
     }
 }
 
-function extractInjected(injectables, filenames) {
+function extractInjectedInjectables(injectables, filenames) {
     return function (ast, index) {
         var injectedDependencies = undefined, filename = filenames[index], importName = getImportName(filename);
 
         estraverse.traverse(ast, {
             enter: function (node) {
-                var injectableCandidateNames = functionParameterNames(node) || [];
+                var injectableCandidateNames = functionParameterNames(node) ||
+                    asArray(extractControllerIdentifier(node)) ||
+                    [];
 
                 injectableCandidateNames.forEach(function (injectableCandidateName) {
                     var injectable = _.find(injectables, function (injectable) {
@@ -142,10 +150,7 @@ function extractInjected(injectables, filenames) {
 
                     if (injectable) {
                         if (!injectedDependencies) {
-                            injectedDependencies = {
-                                importName: importName,
-                                injectables: []
-                            }
+                            injectedDependencies = {importName: importName, injectables: []}
                         }
 
                         injectedDependencies.injectables.push(injectable);
@@ -156,12 +161,6 @@ function extractInjected(injectables, filenames) {
 
         return injectedDependencies;
     };
-}
-
-function extractInjectableName(node) {
-    var injectables = ['factory', 'service', 'provider', 'directive', 'controller'], calledMember = memberCall(node);
-
-    return injectables.indexOf(calledMember) >= 0 && node.arguments[0].value;
 }
 
 function extractModuleNameAndRequires(node, filename) {
@@ -217,6 +216,28 @@ function memberCall(node) {
 function functionParameterNames(node) {
     if (node.type === 'FunctionDeclaration' || node.type === 'FunctionExpression') {
         return _.pluck(node.params, 'name');
+    }
+}
+
+function extractInjectableName(node) {
+    var injectables = ['factory', 'service', 'provider', 'directive', 'controller'], calledMember = memberCall(node);
+
+    return injectables.indexOf(calledMember) >= 0 && node.arguments[0].value;
+}
+
+function extractControllerIdentifier(node) {
+    if (node.type === 'ObjectExpression') {
+        var result = node.properties
+            .filter(function (property) {
+                return property.key.name === 'controller' && property.value.type === 'Identifier';
+            })
+            .map(function (controllerProperty) {
+                return controllerProperty.value.name;
+            });
+
+        assert(result.length <= 1, 'Error, found more that one controller property: + "' + result + '".');
+
+        return result[0];
     }
 }
 
