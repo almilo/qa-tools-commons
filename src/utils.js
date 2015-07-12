@@ -52,3 +52,7 @@ exports.processOption = function (params, optionName, optionValue) {
         }
     }
 };
+
+exports.asArray = function(value) {
+  return value && !_.isArray(value) ? [value] : value;
+};
