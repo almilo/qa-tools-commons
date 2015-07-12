@@ -1,19 +1,20 @@
-var _ = require('lodash'), path = require('path'), utils = require('../utils'), jsParser = utils.jsParser,
-    concatAll = utils.concatAll, assert = utils.assert, asArray = utils.asArray, estraverse = require('estraverse'),
+var _ = require('lodash'), path = require('path'), estraverse = require('estraverse'),
+    utils = require('../utils'), jsParser = utils.jsParser, concatAll = utils.concatAll, assert = utils.assert, asArray = utils.asArray,
+    extractor = require('./extractor'), extractImportSourceAndSpecifiers = extractor.extractImportSourceAndSpecifiers,
+    extractFunctionParameterNames = extractor.extractFunctionParameterNames, extractCalledMember = extractor.extractCalledMember,
     defaultRenderer = require('./rendering/console-renderer');
 
 exports.Report = function (filenames) {
-    var asts = filenames.map(jsParser);
-
-    this.injectedDependencies = extractInjectedDependencies(asts, filenames);
-    this.modules = extractModules(asts, filenames);
-
-    this.getInjectedDependencies = function () {
-        return this.injectedDependencies;
-    };
+    var asts = filenames.map(jsParser),
+        modules = extractModules(asts, filenames),
+        injectedDependencies = extractInjectedDependencies(asts, filenames);
 
     this.getModules = function () {
-        return this.modules;
+        return modules;
+    };
+
+    this.getInjectedDependencies = function () {
+        return injectedDependencies;
     };
 
     this.render = function () {
@@ -23,23 +24,24 @@ exports.Report = function (filenames) {
 
         (renderer || defaultRenderer).apply(undefined, arguments);
     };
+
+    function extractModules(asts, filenames) {
+        return asts
+            .map(extractModuleDefinitions(filenames))
+            .reduce(concatAll, []);
+    }
+
+    function extractInjectedDependencies(asts, filenames) {
+        var injectables = asts
+            .map(extractInjectables)
+            .reduce(concatAll, []);
+
+        return asts
+            .map(extractInjectedInjectables(injectables, filenames))
+            .reduce(concatAll, []);
+    }
 };
 
-function extractInjectedDependencies(asts, filenames) {
-    var injectables = asts
-        .map(extractInjectables)
-        .reduce(concatAll, []);
-
-    return asts
-        .map(extractInjectedInjectables(injectables, filenames))
-        .reduce(concatAll, []);
-}
-
-function extractModules(asts, filenames) {
-    return asts
-        .map(extractModuleDefinitions(filenames))
-        .reduce(concatAll, []);
-}
 
 function extractModuleDefinitions(filenames) {
     return function (ast, index) {
@@ -139,7 +141,7 @@ function extractInjectedInjectables(injectables, filenames) {
 
         estraverse.traverse(ast, {
             enter: function (node) {
-                var injectableCandidateNames = functionParameterNames(node) ||
+                var injectableCandidateNames = extractFunctionParameterNames(node) ||
                     asArray(extractControllerIdentifier(node)) ||
                     [];
 
@@ -164,19 +166,21 @@ function extractInjectedInjectables(injectables, filenames) {
 }
 
 function extractModuleNameAndRequires(node, filename) {
-    var calledMember = memberCall(node);
+    var calledMember = extractCalledMember(node);
 
     if (calledMember === 'module' && node.arguments.length > 0 && node.arguments[0].type === 'Literal') {
         var name = node.arguments[0].value;
 
         if (name) {
-            var elements = (node.arguments[1] && node.arguments[1].type === 'ArrayExpression' && node.arguments[1].elements) || [];
-
             if (node.arguments[1] && node.arguments[1].type !== 'ArrayExpression') {
                 console.warn('Warning, found non-array expression as module requires in: "' + filename + '".');
             }
 
-            return {name: name, requires: elements.map(extractIdentifier)};
+            var arrayElements = (node.arguments[1] && node.arguments[1].type === 'ArrayExpression' && node.arguments[1].elements);
+
+            arrayElements = arrayElements ? _.cloneDeep(arrayElements) : [];
+
+            return {name: name, requires: arrayElements.map(extractIdentifier)};
         }
     }
 
@@ -186,7 +190,7 @@ function extractModuleNameAndRequires(node, filename) {
 }
 
 function extractImportNameAndIdentifiers(node) {
-    var importSourceAndSpecifiers = importDeclaration(node);
+    var importSourceAndSpecifiers = extractImportSourceAndSpecifiers(node);
 
     if (importSourceAndSpecifiers) {
         var name = importSourceAndSpecifiers.source.value, identifiers = [];
@@ -199,28 +203,8 @@ function extractImportNameAndIdentifiers(node) {
     }
 }
 
-function importDeclaration(node) {
-    if (node.type === 'ImportDeclaration') {
-        return {source: node.source, specifiers: node.specifiers};
-    }
-}
-
-function memberCall(node) {
-    if (node.type === 'CallExpression') {
-        var callee = node.callee;
-
-        return (callee.type === 'MemberExpression' && callee.property.type === 'Identifier') && callee.property.name;
-    }
-}
-
-function functionParameterNames(node) {
-    if (node.type === 'FunctionDeclaration' || node.type === 'FunctionExpression') {
-        return _.pluck(node.params, 'name');
-    }
-}
-
 function extractInjectableName(node) {
-    var injectables = ['factory', 'service', 'provider', 'directive', 'controller'], calledMember = memberCall(node);
+    var injectables = ['factory', 'service', 'provider', 'directive', 'controller'], calledMember = extractCalledMember(node);
 
     return injectables.indexOf(calledMember) >= 0 && node.arguments[0].value;
 }
