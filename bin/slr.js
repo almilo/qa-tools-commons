@@ -1,28 +1,27 @@
 #! /usr/bin/env node
 
-var _ = require('lodash'), utils = require('../src/utils'), assert = utils.assert, expandFilenames = utils.expandFilenames,
-    processOption = utils.processOption, Report = require('../src/spec-layout-reporter').Report;
+var yargs = require('yargs'), expandFilenames = require('../src/utils').expandFilenames,
+    Report = require('../src/spec-layout-reporter').Report;
 
-assert(process.argv.length >= 3, [
-    'usage: slr <file matcher>',
-    '',
-    'examples:',
-    '    slr foo.spec.js',
-    '    slr src/lib/*.spec.js',
-    '    slr src/lib/**/**/*.spec.js'
-]);
+var argv = yargs
+    .usage('Usage: $0 -f <files matcher> [options]')
+    .array('f')
+    .demand('f')
+    .alias('f', 'files')
+    .describe('f', 'Files to process. It can be one or more files, a shell wildcard or a "glob" matcher (use quotes to avoid the shell expanding it).')
+    .boolean('html')
+    .describe('html', 'Produces the specification layout as HTML.')
+    .help('h')
+    .alias('h', 'help')
+    .example('$0 -f "src/**/*.spec.js"', 'Processes the files matcher as a "glob" matcher and prints the specification layout of all matched files.')
+    .example('$0 -f "foo.spec.js" --html', 'Prints the specification layout of the file "foo.spec.js" as HTML.')
+    .argv;
 
-var params = process.argv.slice(2), options = processParams(params), report = new Report();
+var report = new Report(), renderer = argv.html && require('../src/spec-layout-reporter/rendering/html-renderer');
 
-expandFilenames(params, true)
+expandFilenames(argv.files, true)
     .forEach(function (filename) {
         report.add(filename);
     });
 
-report.render(options.renderer);
-
-function processParams(params) {
-    var htmlOption = processOption(params, '--html', {renderer: require('../src/spec-layout-reporter/rendering/html-renderer')});
-
-    return _.extend({}, htmlOption);
-}
+report.render(renderer);

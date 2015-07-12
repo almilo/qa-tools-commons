@@ -23,36 +23,11 @@ exports.indent = function (indentationLevel, text) {
 };
 
 exports.assert = function (condition, errorMessage) {
-    errorMessage = _.isString(errorMessage) ? [errorMessage] : errorMessage;
-
     if (!condition) {
-        errorMessage.map(function (line) {
-            console.error(line);
-        });
-
-        process.exit(1);
+        throw new Error(errorMessage);
     }
 };
 
-exports.processOption = function (params, optionName, optionValue) {
-    var optionIndex = params.indexOf(optionName);
-
-    if (optionIndex >= 0) {
-        params.splice(optionIndex, 1);
-
-        return _.isString(optionValue) ? parseOption(optionValue, optionIndex, params) : optionValue;
-
-        function parseOption(optionValue, optionIndex, params) {
-            var option = {};
-
-            option[optionValue] = params[optionIndex];
-            params.splice(optionIndex, 1);
-
-            return option;
-        }
-    }
-};
-
-exports.asArray = function(value) {
-  return value && !_.isArray(value) ? [value] : value;
+exports.asArray = function (value) {
+    return value && !_.isArray(value) ? [value] : value;
 };
