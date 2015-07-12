@@ -144,7 +144,9 @@ function extractInjectedInjectables(injectables) {
                             injectedDependencies = {importName: importName, injectables: []}
                         }
 
-                        injectedDependencies.injectables.push(injectable);
+                        if (injectedDependencies.injectables.indexOf(injectable) < 0) {
+                            injectedDependencies.injectables.push(injectable);
+                        }
                     }
                 });
             }
