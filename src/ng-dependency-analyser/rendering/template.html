@@ -53,7 +53,7 @@
               {{~module.injectables :injectable}}
 
               // Provided as import name and name as label
-              g.setNode('{{= injectable.importName}}', {label: '{{= injectable.name}}'});
+              g.setNode('{{= injectable.importName}}', {label: '{{= injectable.name}}', shape: 'ellipse'});
               {{~}}
             {{~}}
 
@@ -72,7 +72,7 @@
             // DEPENDENCIES
             {{~it.getInjectedDependencies() :injectedDependency}}
               // File as import name where dependencies are injected
-              g.setNode('{{= injectedDependency.importName}}', {shape: 'ellipse'});
+              g.setNode('{{= injectedDependency.importName}}', {label: previousLabel(g, '{{= injectedDependency.importName}}'), shape: 'ellipse'});
               {{~injectedDependency.injectables :injectable}}
               // Injected dependency as import name with name as label
               g.setNode('{{= injectable.importName}}', {label: '{{= injectable.name}}', shape: 'ellipse'});
@@ -93,6 +93,12 @@
 
             svgGroup.attr('transform', 'translate(' + xCenterOffset + ', 20)');
             svg.attr('height', g.graph().height + 40);
+
+            function previousLabel(g, nodeId) {
+                var node = g.node(nodeId);
+
+                return node && node.label;
+            }
         </script>
     </body>
 </html>
