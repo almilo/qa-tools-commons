@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+    <head lang="en">
+        <meta charset="UTF-8">
+        <title>Angular Dependency Analysis</title>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+        <script src="http://cpettitt.github.io/project/dagre-d3/latest/dagre-d3.js"></script>
+        <style>
+            body {
+                font-weight: 300;
+                font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            }
+
+            svg {
+                overflow: hidden;
+                margin: 0 auto;
+            }
+
+            text {
+                font-size: 14px;
+            }
+
+            .node rect, .node ellipse {
+                stroke: #999;
+                fill: #fff;
+                stroke-width: 1.5px;
+            }
+
+            .edgePath path {
+                stroke: #333;
+                stroke-width: 1.5px;
+            }
+        </style>
+    </head>
+    <body>
+        <svg id="ngda" width="4096" height="2048"></svg>
+        <script>
+            var g = new dagreD3.graphlib.Graph()
+                    .setGraph({})
+                    .setDefaultEdgeLabel(function () {
+                        return {};
+                    });
+
+            // MODULES
+            {{~it.getModules() :module}}
+              // Module as import name and name as label
+              g.setNode('{{= module.importName}}', {label: '{{= module.name}}', shape: 'rect'});
+              {{~module.requires :required}}
+
+              // Required as import name
+              g.setNode('{{= required}}', {shape: 'rect'});
+              {{~}}
+              {{~module.injectables :injectable}}
+
+              // Provided as import name and name as label
+              g.setNode('{{= injectable.importName}}', {label: '{{= injectable.name}}'});
+              {{~}}
+            {{~}}
+
+            {{~it.getModules() :module}}
+              {{~module.requires :required}}
+              g.setEdge('{{= module.importName}}', '{{= required }}', {label: 'requires'});
+              {{~}}
+            {{~}}
+
+            {{~it.getModules() :module}}
+              {{~module.injectables :injectable}}
+              g.setEdge('{{= module.importName}}', '{{= injectable.importName }}', {label: 'provides'});
+              {{~}}
+            {{~}}
+
+            // DEPENDENCIES
+            {{~it.getInjectedDependencies() :injectedDependency}}
+              // File as import name where dependencies are injected
+              g.setNode('{{= injectedDependency.importName}}', {shape: 'ellipse'});
+              {{~injectedDependency.injectables :injectable}}
+              // Injected dependency as import name with name as label
+              g.setNode('{{= injectable.importName}}', {label: '{{= injectable.name}}', shape: 'ellipse'});
+              {{~}}
+            {{~}}
+
+            {{~it.getInjectedDependencies() :injectedDependency}}
+            {{~injectedDependency.injectables :injectable}}
+              g.setEdge('{{= injectedDependency.importName}}', '{{= injectable.importName }}', {label: 'uses'});
+            {{~}}
+            {{~}}
+
+            var render = new dagreD3.render(), svg = d3.select('#ngda'), svgGroup = svg.append('g');
+
+            render(d3.select('#ngda g'), g);
+
+            var xCenterOffset = (svg.attr('width') - g.graph().width) / 2;
+
+            svgGroup.attr('transform', 'translate(' + xCenterOffset + ', 20)');
+            svg.attr('height', g.graph().height + 40);
+        </script>
+    </body>
+</html>

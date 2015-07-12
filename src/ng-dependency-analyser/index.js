@@ -89,8 +89,12 @@ function extractModuleDefinition(ast, filename) {
     return module && resolveImportNames(module, importResolver);
 
     function resolveImportNames(module, importResolver) {
-        module.requires = module.requires.map(importResolver.getImportNameForIdentifier);
-        module.injectables = module.injectables.map(_.partial(createResolvedInjectable, importResolver));
+        module.requires = module.requires
+            .map(importResolver.getImportNameForIdentifier)
+            .filter(isNotUndefined);
+        module.injectables = module.injectables
+            .map(_.partial(createResolvedInjectable, importResolver))
+            .filter(isNotUndefined);
 
         return module;
     }
@@ -121,7 +125,9 @@ function extractInjectables(ast, filename) {
         }
     });
 
-    return injectables.map(_.partial(createResolvedInjectable, importResolver));
+    return injectables
+        .map(_.partial(createResolvedInjectable, importResolver))
+        .filter(isNotUndefined);
 }
 
 function extractInjectedInjectables(injectables) {
@@ -217,5 +223,11 @@ function extractControllerIdentifier(node) {
 }
 
 function createResolvedInjectable(importResolver, injectableName) {
-    return {name: injectableName, importName: importResolver.getImportNameForIdentifier(injectableName)};
+    var importName = importResolver.getImportNameForIdentifier(injectableName);
+
+    return importName && {name: injectableName, importName: importName};
+}
+
+function isNotUndefined(item) {
+    return item !== undefined;
 }

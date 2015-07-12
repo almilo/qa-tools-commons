@@ -4,7 +4,7 @@ var path = require('path'), fs = require('fs'), dot = require('dot'), shelljs = 
 dot.templateSettings.strip = false;
 
 module.exports = function (report, outputFilename) {
-    assert(outputFilename, 'Error: no output file name has been provided to the png renderer.');
+    assert(outputFilename, 'Error: no output file name has been provided to the PNG renderer.');
 
     var templateFile = fs.readFileSync(path.join(__dirname, 'template.dot')),
         dotTemplate = dot.template(templateFile), tempDotFilename = path.join(shelljs.tempdir(), 'deps.dot'),
