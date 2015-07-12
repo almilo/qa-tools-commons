@@ -1,13 +1,15 @@
-var _ = require('lodash'), path = require('path'), estraverse = require('estraverse'),
+var _ = require('lodash'), estraverse = require('estraverse'),
     utils = require('../utils'), jsParser = utils.jsParser, concatAll = utils.concatAll, assert = utils.assert, asArray = utils.asArray,
     extractor = require('./extractor'), extractImportSourceAndSpecifiers = extractor.extractImportSourceAndSpecifiers,
     extractFunctionParameterNames = extractor.extractFunctionParameterNames, extractCalledMember = extractor.extractCalledMember,
+    importResolver = require('./import-resolver'), ImportResolver = importResolver.ImportResolver,
+    getImportNameForFilename = importResolver.getImportNameForFilename,
     defaultRenderer = require('./rendering/console-renderer');
 
 exports.Report = function (filenames) {
     var asts = filenames.map(jsParser),
-        modules = extractModules(asts, filenames),
-        injectedDependencies = extractInjectedDependencies(asts, filenames);
+        modules = extractModules(asts),
+        injectedDependencies = extractInjectedDependencies(asts);
 
     this.getModules = function () {
         return modules;
@@ -25,89 +27,84 @@ exports.Report = function (filenames) {
         (renderer || defaultRenderer).apply(undefined, arguments);
     };
 
-    function extractModules(asts, filenames) {
+    function extractModules(asts) {
         return asts
-            .map(extractModuleDefinitions(filenames))
+            .map(callWithAstAndFilename(extractModuleDefinition))
             .reduce(concatAll, []);
     }
 
-    function extractInjectedDependencies(asts, filenames) {
+    function extractInjectedDependencies(asts) {
         var injectables = asts
             .map(extractInjectables)
             .reduce(concatAll, []);
 
         return asts
-            .map(extractInjectedInjectables(injectables, filenames))
+            .map(callWithAstAndFilename(extractInjectedInjectables(injectables)))
             .reduce(concatAll, []);
+    }
+
+    function callWithAstAndFilename(fn) {
+        return function (ast, index) {
+            return fn.call(undefined, ast, filenames[index]);
+        }
     }
 };
 
+function extractModuleDefinition(ast, filename) {
+    var module = undefined, importResolver = new ImportResolver(), importName = getImportNameForFilename(filename);
 
-function extractModuleDefinitions(filenames) {
-    return function (ast, index) {
-        var module = undefined, importsNamesAndIdentifiers = [], filename = filenames[index], importName = getImportName(filename);
+    estraverse.traverse(ast, {
+        leave: function (node) {
+            var importNameAndIdentifiers = extractImportNameAndIdentifiers(node);
 
-        estraverse.traverse(ast, {
-            leave: function (node) {
-                var importNameAndIdentifiers = extractImportNameAndIdentifiers(node);
+            if (importNameAndIdentifiers) {
+                importResolver.addImportNameAndIdentifiers(importNameAndIdentifiers);
+            }
 
-                if (importNameAndIdentifiers) {
-                    importsNamesAndIdentifiers.push(importNameAndIdentifiers);
-                }
+            var moduleNameAndRequires = extractModuleNameAndRequires(node, filename);
 
-                var moduleNameAndRequires = extractModuleNameAndRequires(node, filename);
+            if (moduleNameAndRequires) {
+                assert(!module, 'Error, more than one module defined in: "' + filename + '".');
 
-                if (moduleNameAndRequires) {
-                    assert(!module, 'Error, more than one module defined in: "' + filename + '".');
+                module = {
+                    name: moduleNameAndRequires.name,
+                    requires: moduleNameAndRequires.requires,
+                    injectables: [],
+                    importName: importName
+                };
+            }
 
-                    module = {
-                        name: moduleNameAndRequires.name,
-                        requires: moduleNameAndRequires.requires,
-                        injectables: [],
-                        importName: importName
-                    };
-                }
+            var injectableName = extractInjectableName(node);
 
-                var injectableName = extractInjectableName(node);
-
-                if (injectableName) {
-                    if (module) {
-                        module.injectables.push(injectableName);
-                    } else {
-                        console.warn('Warning, found injectable: "' + injectableName + '" without current module in: "' + filename + '".');
-                    }
+            if (injectableName) {
+                if (module) {
+                    module.injectables.push(injectableName);
+                } else {
+                    console.warn('Warning, found injectable: "' + injectableName + '" without current module in: "' + filename + '".');
                 }
             }
-        });
+        }
+    });
 
-        return module && resolveDependenciesToImportNames(module, importsNamesAndIdentifiers);
-    };
+    return module && resolveImportNames(module, importResolver);
 
-    function resolveDependenciesToImportNames(module, importsNamesAndIdentifiers) {
-        module.requires = module.requires.map(resolveRequire);
-        module.injectables = module.injectables.map(resolveInjectable);
+    function resolveImportNames(module, importResolver) {
+        module.requires = module.requires.map(importResolver.getImportNameForIdentifier);
+        module.injectables = module.injectables.map(_.partial(createResolvedInjectable, importResolver));
 
         return module;
-
-        function resolveRequire(require) {
-            return resolveImport(require, importsNamesAndIdentifiers);
-        }
-
-        function resolveInjectable(injectableName) {
-            return {name: injectableName, importName: resolveImport(injectableName, importsNamesAndIdentifiers)};
-        }
     }
 }
 
 function extractInjectables(ast) {
-    var injectables = [], importsNamesAndIdentifiers = [];
+    var injectables = [], importResolver = new ImportResolver();
 
     estraverse.traverse(ast, {
         enter: function (node) {
             var importNameAndIdentifiers = extractImportNameAndIdentifiers(node);
 
             if (importNameAndIdentifiers) {
-                importsNamesAndIdentifiers.push(importNameAndIdentifiers);
+                importResolver.addImportNameAndIdentifiers(importNameAndIdentifiers);
             }
 
             var injectableName = extractInjectableName(node);
@@ -124,20 +121,12 @@ function extractInjectables(ast) {
         }
     });
 
-    return resolveDependenciesToImportNames(injectables, importsNamesAndIdentifiers);
-
-    function resolveDependenciesToImportNames(injectables, importsNamesAndIdentifiers) {
-        return injectables.map(resolveInjectable);
-
-        function resolveInjectable(injectableName) {
-            return {name: injectableName, importName: resolveImport(injectableName, importsNamesAndIdentifiers)};
-        }
-    }
+    return injectables.map(_.partial(createResolvedInjectable, importResolver));
 }
 
-function extractInjectedInjectables(injectables, filenames) {
-    return function (ast, index) {
-        var injectedDependencies = undefined, filename = filenames[index], importName = getImportName(filename);
+function extractInjectedInjectables(injectables) {
+    return function (ast, filename) {
+        var injectedDependencies = undefined, importName = getImportNameForFilename(filename);
 
         estraverse.traverse(ast, {
             enter: function (node) {
@@ -199,7 +188,7 @@ function extractImportNameAndIdentifiers(node) {
             identifiers.push(specifier.local.name);
         });
 
-        return {importName: getImportName(name), identifiers: identifiers};
+        return {importName: getImportNameForFilename(name), identifiers: identifiers};
     }
 }
 
@@ -225,19 +214,6 @@ function extractControllerIdentifier(node) {
     }
 }
 
-function getImportName(filename) {
-    return path.basename(filename, path.extname(filename));
-}
-
-function resolveImport(identifier, importsNamesAndIdentifiers) {
-    var importNameAndIdentifiers = _.find(importsNamesAndIdentifiers, function (importNameAndIdentifiers) {
-        return importNameAndIdentifiers.identifiers.indexOf(identifier) >= 0 ||
-            importNameAndIdentifiers.identifiers.indexOf(identifier + 'Directive') >= 0;
-    });
-
-    if (!importNameAndIdentifiers) {
-        console.warn('Warning, could not resolve import for identifier: "' + identifier + '".');
-    }
-
-    return importNameAndIdentifiers && importNameAndIdentifiers.importName;
+function createResolvedInjectable(importResolver, injectableName) {
+    return {name: injectableName, importName: importResolver.getImportNameForIdentifier(injectableName)};
 }
