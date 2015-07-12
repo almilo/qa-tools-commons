@@ -5,7 +5,7 @@ digraph modules {
     "{{= module.importName}}" [shape="box", label="{{= module.name}}"]
     {{~module.requires :required}}
     // Required as import name
-    "{{= required}}" [shape="oval"]
+    "{{= required}}" [shape="box"]
     {{~}}
     {{~module.injectables :injectable}}
     // Provided as import name and name as label
