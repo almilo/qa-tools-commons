@@ -4,7 +4,7 @@ exports.getImportNameForFilename = function (filename) {
     return path.basename(filename, path.extname(filename));
 };
 
-exports.ImportResolver = function () {
+exports.ImportResolver = function (filename) {
     var importsNamesAndIdentifiers = [];
 
     this.addImportNameAndIdentifiers = function (importNameAndIdentifiers) {
@@ -18,7 +18,7 @@ exports.ImportResolver = function () {
         });
 
         if (!importNameAndIdentifiers) {
-            console.warn('Warning, could not resolve import for identifier: "' + identifier + '".');
+            console.warn('Warning, could not resolve import for identifier: "' + identifier + '" in file: "' + filename + '".');
         }
 
         return importNameAndIdentifiers && importNameAndIdentifiers.importName;

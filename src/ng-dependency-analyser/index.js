@@ -35,7 +35,7 @@ exports.Report = function (filenames) {
 
     function extractInjectedDependencies(asts) {
         var injectables = asts
-            .map(extractInjectables)
+            .map(callWithAstAndFilename(extractInjectables))
             .reduce(concatAll, []);
 
         return asts
@@ -51,7 +51,7 @@ exports.Report = function (filenames) {
 };
 
 function extractModuleDefinition(ast, filename) {
-    var module = undefined, importResolver = new ImportResolver(), importName = getImportNameForFilename(filename);
+    var module = undefined, importResolver = new ImportResolver(filename), importName = getImportNameForFilename(filename);
 
     estraverse.traverse(ast, {
         leave: function (node) {
@@ -96,8 +96,8 @@ function extractModuleDefinition(ast, filename) {
     }
 }
 
-function extractInjectables(ast) {
-    var injectables = [], importResolver = new ImportResolver();
+function extractInjectables(ast, filename) {
+    var injectables = [], importResolver = new ImportResolver(filename);
 
     estraverse.traverse(ast, {
         enter: function (node) {
