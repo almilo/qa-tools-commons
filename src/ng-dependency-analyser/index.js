@@ -56,30 +56,22 @@ function extractModuleDefinition(ast, filename) {
 
     estraverse.traverse(ast, {
         leave: function (node) {
-            var importNameAndIdentifiers = extractImportNameAndIdentifiers(node);
+            callIfNotFalsy(extractImportNameAndIdentifiers(node), importResolver.addImportNameAndIdentifiers.bind(importResolver));
 
-            if (importNameAndIdentifiers) {
-                importResolver.addImportNameAndIdentifiers(importNameAndIdentifiers);
-            }
-
-            var moduleNameAndRequires = extractModuleNameAndRequires(node, filename);
-
-            if (moduleNameAndRequires) {
+            callIfNotFalsy(extractModuleNameAndRequires(node, filename), function (moduleNameAndRequires) {
                 assert(!module, 'Error, more than one module defined in: "' + filename + '".');
 
                 module = new Module(moduleNameAndRequires.name, importName);
                 requires = moduleNameAndRequires.requires;
-            }
+            });
 
-            var providedDependencyName = extractInjectableDependencyName(node);
-
-            if (providedDependencyName) {
+            callIfNotFalsy(extractInjectableDependencyName(node), function (providedDependencyName) {
                 if (module) {
                     provides.push(providedDependencyName);
                 } else {
                     console.warn('Warning, found injectable: "' + providedDependencyName + '" without current module in: "' + filename + '".');
                 }
-            }
+            });
         }
     });
 
@@ -107,23 +99,11 @@ function extractInjectableDependencies(ast, filename) {
 
     estraverse.traverse(ast, {
         enter: function (node) {
-            var importNameAndIdentifiers = extractImportNameAndIdentifiers(node);
+            callIfNotFalsy(extractImportNameAndIdentifiers(node), importResolver.addImportNameAndIdentifiers.bind(importResolver));
 
-            if (importNameAndIdentifiers) {
-                importResolver.addImportNameAndIdentifiers(importNameAndIdentifiers);
-            }
+            callIfNotFalsy(extractInjectableDependencyName(node), injectableDependenciesNames.push.bind(injectableDependenciesNames));
 
-            var injectableDependencyName = extractInjectableDependencyName(node);
-
-            if (injectableDependencyName) {
-                injectableDependenciesNames.push(injectableDependencyName);
-            }
-
-            var injectedControllerIdentifier = extractInjectedControllerIdentifier(node);
-
-            if (injectedControllerIdentifier) {
-                injectableDependenciesNames.push(injectedControllerIdentifier);
-            }
+            callIfNotFalsy(extractInjectedControllerIdentifier(node), injectableDependenciesNames.push.bind(injectableDependenciesNames));
         }
     });
 
@@ -143,13 +123,7 @@ function extractInjectedDependencies(injectableDependencies) {
                     [];
 
                 injectedDependenciesCandidates.forEach(function (injectedDependencyCandidate) {
-                    var injectableDependency = _.find(injectableDependencies, byName);
-
-                    function byName(injectableDependency) {
-                        return injectableDependency.name === injectedDependencyCandidate;
-                    }
-
-                    if (injectableDependency) {
+                    callIfNotFalsy(_.find(injectableDependencies, byName), function(injectableDependency) {
                         if (!injectedDependencies) {
                             injectedDependencies = [];
                         }
@@ -157,6 +131,10 @@ function extractInjectedDependencies(injectableDependencies) {
                         if (injectedDependencies.indexOf(injectableDependency) < 0) {
                             injectedDependencies.push(injectableDependency);
                         }
+                    });
+
+                    function byName(injectableDependency) {
+                        return injectableDependency.name === injectedDependencyCandidate;
                     }
                 });
             }
@@ -234,6 +212,12 @@ function createResolvedDependency(importResolver, identifier) {
 
 function isNotUndefined(item) {
     return item !== undefined;
+}
+
+function callIfNotFalsy(value, fn) {
+    if (value) {
+        fn(value);
+    }
 }
 
 function Module(name, importName, requires, provides) {
