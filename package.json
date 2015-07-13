@@ -6,7 +6,7 @@
   "license": "MIT",
   "repository": "https://github.com/almilo/qa-tools-commons.git",
   "bin": {
-    "slr": "bin/speclr.js",
+    "speclr": "bin/speclr.js",
     "ngda": "bin/ngda.js"
   },
   "dependencies": {
