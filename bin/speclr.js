@@ -1,7 +1,6 @@
 #! /usr/bin/env node
 
-var fs = require('fs'), yargs = require('yargs'), expandFilenames = require('../src/utils').expandFilenames,
-    Report = require('../src/spec-layout-reporter').Report;
+var fs = require('fs'), yargs = require('yargs'), speclr = require('../speclr');
 
 var argv = yargs
     .usage('Usage: $0 -f <files matcher> [options]')
@@ -31,11 +30,4 @@ function argumentsChecker(argv) {
     return true;
 }
 
-var report = new Report(), renderer = argv.html && require('../src/spec-layout-reporter/rendering/html-renderer');
-
-expandFilenames(argv.files, true)
-    .forEach(function (filename) {
-        report.add(filename);
-    });
-
-report.render(renderer, argv.html, argv.overwrite);
+speclr(argv.files, argv.html && 'html', argv.html, argv.overwrite);
