@@ -1,4 +1,5 @@
-var _ = require('lodash'), fs = require('fs'), glob = require('glob'), parserImplementation = require('acorn').parse;
+var _ = require('lodash'), fs = require('fs'), path = require('path'), glob = require('glob'),
+    parserImplementation = require('acorn').parse, mkpath = require('mkpath');
 
 exports.expandFilenames = function (args, includeSpecs) {
     return glob.hasMagic(args[0]) ? glob.sync(args[0]).filter(specs) : args;
@@ -30,4 +31,10 @@ exports.assert = function (condition, errorMessage) {
 
 exports.asArray = function (value) {
     return value && !_.isArray(value) ? [value] : value;
+};
+
+exports.checkPathExists = function (filename) {
+    var pathTo = path.relative(process.cwd(), path.dirname(filename));
+
+    mkpath.sync(pathTo);
 };

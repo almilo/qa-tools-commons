@@ -1,5 +1,5 @@
 var path = require('path'), fs = require('fs'), dot = require('dot'), shelljs = require('shelljs'),
-    assert = require('../../utils').assert;
+    utils = require('../../utils'), assert = utils.assert, checkPathExists = utils.checkPathExists;
 
 dot.templateSettings.strip = false;
 
@@ -9,6 +9,8 @@ module.exports = function (report, outputFilename) {
     var templateFile = fs.readFileSync(path.join(__dirname, 'template.dot')),
         dotTemplate = dot.template(templateFile), tempDotFilename = path.join(shelljs.tempdir(), 'deps.dot'),
         dotCommand = 'dot ' + tempDotFilename + ' -Tpng -o' + outputFilename;
+
+    checkPathExists(outputFilename);
 
     fs.writeFileSync(tempDotFilename, dotTemplate(report));
 

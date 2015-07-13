@@ -1,4 +1,5 @@
-var path = require('path'), fs = require('fs'), dot = require('dot'), assert = require('../../utils').assert;
+var path = require('path'), fs = require('fs'), dot = require('dot'), utils = require('../../utils'),
+    assert = utils.assert, checkPathExists = utils.checkPathExists;
 
 dot.templateSettings.strip = false;
 
@@ -7,6 +8,8 @@ module.exports = function (report, outputFilename) {
 
     var templateFile = fs.readFileSync(path.join(__dirname, 'template.html')),
         htmlTemplate = dot.template(templateFile);
+
+    checkPathExists(outputFilename);
 
     fs.writeFileSync(outputFilename, htmlTemplate(report));
 };
