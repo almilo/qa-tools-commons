@@ -1,7 +1,6 @@
 #! /usr/bin/env node
 
-var fs = require('fs'), _ = require('lodash'), yargs = require('yargs'), expandFilenames = require('../src/utils').expandFilenames,
-    Report = require('../src/ng-dependency-analyser').Report;
+var fs = require('fs'), _ = require('lodash'), yargs = require('yargs'), ngda = require('../ngda');
 
 var argv = yargs
     .usage('Usage: $0 -f <files matcher> [options]')
@@ -40,18 +39,18 @@ function argumentsChecker(argv) {
     return true;
 }
 
-var rendererAndFilename = getRendererAndFilename(argv);
+var rendererNameAndFilename = getRendererNameAndFileName(argv);
 
-new Report(expandFilenames(argv.files)).render(rendererAndFilename.renderer, rendererAndFilename.filename, argv.overwrite);
+ngda(argv.files, rendererNameAndFilename.rendererName, rendererNameAndFilename.fileName, argv.overwrite);
 
-function getRendererAndFilename(argv) {
+function getRendererNameAndFileName(argv) {
     var rendererName = _.find(['dot', 'png', 'html'], function (rendererName) {
         return !!argv[rendererName];
     });
 
     return (rendererName && {
-            renderer: require('../src/ng-dependency-analyser/rendering/' + rendererName + '-renderer'),
-            filename: argv[rendererName]
+            rendererName: rendererName,
+            fileName: argv[rendererName]
         }) || {};
 }
 
