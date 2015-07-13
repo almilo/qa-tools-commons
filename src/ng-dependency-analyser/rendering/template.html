@@ -50,10 +50,10 @@
               // Required as import name
               g.setNode('{{= required}}', {shape: 'rect'});
               {{~}}
-              {{~module.injectables :injectable}}
+              {{~module.provides :provide}}
 
               // Provided as import name and name as label
-              g.setNode('{{= injectable.importName}}', {label: '{{= injectable.name}}', shape: 'ellipse'});
+              g.setNode('{{= provide.importName}}', {label: '{{= provide.name}}', shape: 'ellipse'});
               {{~}}
             {{~}}
 
@@ -64,8 +64,8 @@
             {{~}}
 
             {{~it.getModules() :module}}
-              {{~module.injectables :injectable}}
-              g.setEdge('{{= module.importName}}', '{{= injectable.importName }}', {label: 'provides'});
+              {{~module.provides :provide}}
+              g.setEdge('{{= module.importName}}', '{{= provide.importName }}', {label: 'provides'});
               {{~}}
             {{~}}
 
@@ -73,15 +73,15 @@
             {{~it.getInjectedDependencies() :injectedDependency}}
               // File as import name where dependencies are injected
               g.setNode('{{= injectedDependency.importName}}', {label: previousLabel(g, '{{= injectedDependency.importName}}'), shape: 'ellipse'});
-              {{~injectedDependency.injectables :injectable}}
+              {{~injectedDependency.dependencies :dependency}}
               // Injected dependency as import name with name as label
-              g.setNode('{{= injectable.importName}}', {label: '{{= injectable.name}}', shape: 'ellipse'});
+              g.setNode('{{= dependency.importName}}', {label: '{{= dependency.name}}', shape: 'ellipse'});
               {{~}}
             {{~}}
 
             {{~it.getInjectedDependencies() :injectedDependency}}
-            {{~injectedDependency.injectables :injectable}}
-              g.setEdge('{{= injectedDependency.importName}}', '{{= injectable.importName }}', {label: 'uses'});
+            {{~injectedDependency.dependencies :dependency}}
+              g.setEdge('{{= injectedDependency.importName}}', '{{= dependency.importName }}', {label: 'uses'});
             {{~}}
             {{~}}
 

@@ -6,16 +6,16 @@ module.exports = function consoleRenderer(report) {
         console.log(module.name);
 
         renderCollection('requires:', module.requires);
-        renderCollection('provides:', module.injectables, 'name');
+        renderCollection('provides:', module.provides, 'name');
     });
 
     console.log();
 
     console.log('Dependencies:');
-    report.getInjectedDependencies().forEach(function (dependency) {
-        console.log(dependency.importName + ' uses:');
-        dependency.injectables.forEach(function (injectable) {
-            console.log(indent(1, injectable.name));
+    report.getInjectedDependencies().forEach(function (injectedDependency) {
+        console.log(injectedDependency.importName + ' uses:');
+        injectedDependency.dependencies.forEach(function (dependency) {
+            console.log(indent(1, dependency.name));
         });
     });
 

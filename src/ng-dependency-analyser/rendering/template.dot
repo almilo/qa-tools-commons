@@ -7,9 +7,9 @@ digraph modules {
     // Required as import name
     "{{= required}}" [shape="box"]
     {{~}}
-    {{~module.injectables :injectable}}
+    {{~module.provides :provide}}
     // Provided as import name and name as label
-    "{{= injectable.importName}}" [shape="oval", label="{{= injectable.name}}"]
+    "{{= provide.importName}}" [shape="oval", label="{{= provide.name}}"]
     {{~}}
   {{~}}
 
@@ -20,8 +20,8 @@ digraph modules {
   {{~}}
 
   {{~it.getModules() :module}}
-    {{~module.injectables :injectable}}
-    "{{= module.importName}}" -> "{{= injectable.importName }}" [label="provides"]
+    {{~module.provides :provide}}
+    "{{= module.importName}}" -> "{{= provide.importName }}" [label="provides"]
     {{~}}
   {{~}}
 
@@ -29,15 +29,15 @@ digraph modules {
   {{~it.getInjectedDependencies() :injectedDependency}}
   // File as import name where dependencies are injected
   "{{= injectedDependency.importName }}" [shape="oval"]
-  {{~injectedDependency.injectables :injectable}}
+  {{~injectedDependency.dependencies :dependency}}
   // Injected dependency as import name with name as label
-  "{{= injectable.importName}}" [shape="oval", label="{{= injectable.name}}"]
+  "{{= dependency.importName}}" [shape="oval", label="{{= dependency.name}}"]
   {{~}}
   {{~}}
 
   {{~it.getInjectedDependencies() :injectedDependency}}
-  {{~injectedDependency.injectables :injectable}}
-  "{{= injectedDependency.importName }}" -> "{{= injectable.importName }}" [label="uses"]
+  {{~injectedDependency.dependencies :dependency}}
+  "{{= injectedDependency.importName }}" -> "{{= dependency.importName }}" [label="uses"]
   {{~}}
   {{~}}
 }

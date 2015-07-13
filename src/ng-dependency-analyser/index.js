@@ -9,7 +9,7 @@ var _ = require('lodash'), estraverse = require('estraverse'),
 exports.Report = function (filenames) {
     var asts = filenames.map(jsParser),
         modules = extractModules(asts),
-        injectedDependencies = extractInjectedDependencies(asts);
+        injectedDependencies = extractDependencies(asts);
 
     this.getModules = function () {
         return modules;
@@ -33,13 +33,13 @@ exports.Report = function (filenames) {
             .reduce(concatAll, []);
     }
 
-    function extractInjectedDependencies(asts) {
-        var injectables = asts
-            .map(callWithAstAndFilename(extractInjectables))
+    function extractDependencies(asts) {
+        var injectableDependencies = asts
+            .map(callWithAstAndFilename(extractInjectableDependencies))
             .reduce(concatAll, []);
 
         return asts
-            .map(callWithAstAndFilename(extractInjectedInjectables(injectables)))
+            .map(callWithAstAndFilename(extractInjectedDependencies(injectableDependencies)))
             .reduce(concatAll, []);
     }
 
@@ -51,7 +51,8 @@ exports.Report = function (filenames) {
 };
 
 function extractModuleDefinition(ast, filename) {
-    var module = undefined, importResolver = new ImportResolver(filename), importName = getImportNameForFilename(filename);
+    var module = undefined, requires = [], provides = [], importResolver = new ImportResolver(filename),
+        importName = getImportNameForFilename(filename);
 
     estraverse.traverse(ast, {
         leave: function (node) {
@@ -66,42 +67,43 @@ function extractModuleDefinition(ast, filename) {
             if (moduleNameAndRequires) {
                 assert(!module, 'Error, more than one module defined in: "' + filename + '".');
 
-                module = {
-                    name: moduleNameAndRequires.name,
-                    requires: moduleNameAndRequires.requires,
-                    injectables: [],
-                    importName: importName
-                };
+                module = new Module(moduleNameAndRequires.name, importName);
+                requires = moduleNameAndRequires.requires;
             }
 
-            var injectableName = extractInjectableName(node);
+            var providedDependencyName = extractInjectableDependencyName(node);
 
-            if (injectableName) {
+            if (providedDependencyName) {
                 if (module) {
-                    module.injectables.push(injectableName);
+                    provides.push(providedDependencyName);
                 } else {
-                    console.warn('Warning, found injectable: "' + injectableName + '" without current module in: "' + filename + '".');
+                    console.warn('Warning, found injectable: "' + providedDependencyName + '" without current module in: "' + filename + '".');
                 }
             }
         }
     });
 
-    return module && resolveImportNames(module, importResolver);
-
-    function resolveImportNames(module, importResolver) {
-        module.requires = module.requires
+    if (module) {
+        requires
             .map(importResolver.getImportNameForIdentifier)
-            .filter(isNotUndefined);
-        module.injectables = module.injectables
-            .map(_.partial(createResolvedInjectable, importResolver))
-            .filter(isNotUndefined);
+            .filter(isNotUndefined)
+            .forEach(function (require) {
+                module.addRequire(require);
+            });
 
-        return module;
+        provides
+            .map(_.partial(createResolvedDependency, importResolver))
+            .filter(isNotUndefined)
+            .forEach(function (require) {
+                module.addProvide(require);
+            });
     }
+
+    return module;
 }
 
-function extractInjectables(ast, filename) {
-    var injectables = [], importResolver = new ImportResolver(filename);
+function extractInjectableDependencies(ast, filename) {
+    var injectableDependenciesNames = [], importResolver = new ImportResolver(filename);
 
     estraverse.traverse(ast, {
         enter: function (node) {
@@ -111,54 +113,56 @@ function extractInjectables(ast, filename) {
                 importResolver.addImportNameAndIdentifiers(importNameAndIdentifiers);
             }
 
-            var injectableName = extractInjectableName(node);
+            var injectableDependencyName = extractInjectableDependencyName(node);
 
-            if (injectableName) {
-                injectables.push(injectableName);
+            if (injectableDependencyName) {
+                injectableDependenciesNames.push(injectableDependencyName);
             }
 
-            var injectedControllerIdentifier = extractControllerIdentifier(node);
+            var injectedControllerIdentifier = extractInjectedControllerIdentifier(node);
 
             if (injectedControllerIdentifier) {
-                injectables.push(injectedControllerIdentifier);
+                injectableDependenciesNames.push(injectedControllerIdentifier);
             }
         }
     });
 
-    return injectables
-        .map(_.partial(createResolvedInjectable, importResolver))
+    return injectableDependenciesNames
+        .map(_.partial(createResolvedDependency, importResolver))
         .filter(isNotUndefined);
 }
 
-function extractInjectedInjectables(injectables) {
+function extractInjectedDependencies(injectableDependencies) {
     return function (ast, filename) {
         var injectedDependencies = undefined, importName = getImportNameForFilename(filename);
 
         estraverse.traverse(ast, {
             enter: function (node) {
-                var injectableCandidateNames = extractFunctionParameterNames(node) ||
-                    asArray(extractControllerIdentifier(node)) ||
+                var injectedDependenciesCandidates = extractFunctionParameterNames(node) ||
+                    asArray(extractInjectedControllerIdentifier(node)) ||
                     [];
 
-                injectableCandidateNames.forEach(function (injectableCandidateName) {
-                    var injectable = _.find(injectables, function (injectable) {
-                        return injectable.name === injectableCandidateName;
-                    });
+                injectedDependenciesCandidates.forEach(function (injectedDependencyCandidate) {
+                    var injectableDependency = _.find(injectableDependencies, byName);
 
-                    if (injectable) {
+                    function byName(injectableDependency) {
+                        return injectableDependency.name === injectedDependencyCandidate;
+                    }
+
+                    if (injectableDependency) {
                         if (!injectedDependencies) {
-                            injectedDependencies = {importName: importName, injectables: []}
+                            injectedDependencies = [];
                         }
 
-                        if (injectedDependencies.injectables.indexOf(injectable) < 0) {
-                            injectedDependencies.injectables.push(injectable);
+                        if (injectedDependencies.indexOf(injectableDependency) < 0) {
+                            injectedDependencies.push(injectableDependency);
                         }
                     }
                 });
             }
         });
 
-        return injectedDependencies;
+        return injectedDependencies && new InjectedDependencies(importName, injectedDependencies);
     };
 }
 
@@ -200,13 +204,13 @@ function extractImportNameAndIdentifiers(node) {
     }
 }
 
-function extractInjectableName(node) {
-    var injectables = ['factory', 'service', 'provider', 'directive', 'controller'], calledMember = extractCalledMember(node);
+function extractInjectableDependencyName(node) {
+    var injectableDependencyFactoryMethods = ['factory', 'service', 'provider', 'directive', 'controller'], calledMember = extractCalledMember(node);
 
-    return injectables.indexOf(calledMember) >= 0 && node.arguments[0].value;
+    return injectableDependencyFactoryMethods.indexOf(calledMember) >= 0 && node.arguments[0].value;
 }
 
-function extractControllerIdentifier(node) {
+function extractInjectedControllerIdentifier(node) {
     if (node.type === 'ObjectExpression') {
         var result = node.properties
             .filter(function (property) {
@@ -222,12 +226,37 @@ function extractControllerIdentifier(node) {
     }
 }
 
-function createResolvedInjectable(importResolver, injectableName) {
-    var importName = importResolver.getImportNameForIdentifier(injectableName);
+function createResolvedDependency(importResolver, identifier) {
+    var importName = importResolver.getImportNameForIdentifier(identifier);
 
-    return importName && {name: injectableName, importName: importName};
+    return importName && new Dependency(identifier, importName);
 }
 
 function isNotUndefined(item) {
     return item !== undefined;
+}
+
+function Module(name, importName, requires, provides) {
+    this.name = name;
+    this.importName = importName;
+    this.requires = requires || [];
+    this.provides = provides || [];
+
+    this.addRequire = function (require) {
+        this.requires.push(require);
+    };
+
+    this.addProvide = function (provide) {
+        this.provides.push(provide);
+    };
+}
+
+function InjectedDependencies(importName, dependencies) {
+    this.importName = importName;
+    this.dependencies = dependencies;
+}
+
+function Dependency(name, importName) {
+    this.name = name;
+    this.importName = importName;
 }
