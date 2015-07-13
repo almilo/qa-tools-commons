@@ -21,18 +21,18 @@ exports.extractDependencies = function (asts, filenames) {
         .reduce(concatAll, []);
 };
 
-function extractModuleDefinition(ast, filename) {
-    var module = undefined, requires = [], provides = [], importResolver = new ImportResolver(filename),
-        importName = getImportNameForFilename(filename);
+function extractModuleDefinition(ast, fileName) {
+    var module = undefined, requires = [], provides = [], importResolver = new ImportResolver(fileName),
+        importName = getImportNameForFilename(fileName);
 
     estraverse.traverse(ast, {
         leave: function (node) {
             callIfNotFalsy(extractImportNameAndIdentifiers(node), importResolver.addImportNameAndIdentifiers.bind(importResolver));
 
-            callIfNotFalsy(extractModuleNameAndRequires(node, filename), function (moduleNameAndRequires) {
-                assert(!module, 'Error, more than one module defined in: "' + filename + '".');
+            callIfNotFalsy(extractModuleNameAndRequires(node, fileName), function (moduleNameAndRequires) {
+                assert(!module, 'Error, more than one module defined in: "' + fileName + '".');
 
-                module = new Module(moduleNameAndRequires.name, importName);
+                module = new Module(moduleNameAndRequires.name, importName, fileName);
                 requires = moduleNameAndRequires.requires;
             });
 
@@ -40,7 +40,7 @@ function extractModuleDefinition(ast, filename) {
                 if (module) {
                     provides.push(providedDependencyName);
                 } else {
-                    console.warn('Warning, found injectable: "' + providedDependencyName + '" without current module in: "' + filename + '".');
+                    console.warn('Warning, found injectable: "' + providedDependencyName + '" without current module in: "' + fileName + '".');
                 }
             });
         }
@@ -65,8 +65,8 @@ function extractModuleDefinition(ast, filename) {
     return module;
 }
 
-function extractInjectableDependencies(ast, filename) {
-    var injectableDependenciesNames = [], importResolver = new ImportResolver(filename);
+function extractInjectableDependencies(ast, fileName) {
+    var injectableDependenciesNames = [], importResolver = new ImportResolver(fileName);
 
     estraverse.traverse(ast, {
         enter: function (node) {
@@ -84,8 +84,8 @@ function extractInjectableDependencies(ast, filename) {
 }
 
 function extractInjectedDependencies(injectableDependencies) {
-    return function (ast, filename) {
-        var injectedDependencies = undefined, importName = getImportNameForFilename(filename);
+    return function (ast, fileName) {
+        var injectedDependencies = undefined, importName = getImportNameForFilename(fileName);
 
         estraverse.traverse(ast, {
             enter: function (node) {
@@ -111,11 +111,11 @@ function extractInjectedDependencies(injectableDependencies) {
             }
         });
 
-        return injectedDependencies && new InjectedDependencies(importName, injectedDependencies);
+        return injectedDependencies && new InjectedDependencies(importName, fileName, injectedDependencies);
     };
 }
 
-function extractModuleNameAndRequires(node, filename) {
+function extractModuleNameAndRequires(node, fileName) {
     var calledMember = extractCalledMember(node);
 
     if (calledMember === 'module' && node.arguments.length > 0 && node.arguments[0].type === 'Literal') {
@@ -123,7 +123,7 @@ function extractModuleNameAndRequires(node, filename) {
 
         if (name) {
             if (node.arguments[1] && node.arguments[1].type !== 'ArrayExpression') {
-                console.warn('Warning, found non-array expression as module requires in: "' + filename + '".');
+                console.warn('Warning, found non-array expression as module requires in: "' + fileName + '".');
             }
 
             var arrayElements = (node.arguments[1] && node.arguments[1].type === 'ArrayExpression' && node.arguments[1].elements);
@@ -197,9 +197,10 @@ function isNotUndefined(item) {
     return item !== undefined;
 }
 
-function Module(name, importName, requires, provides) {
+function Module(name, importName, fileName, requires, provides) {
     this.name = name;
     this.importName = importName;
+    this.fileName = fileName;
     this.requires = requires || [];
     this.provides = provides || [];
 
@@ -212,8 +213,9 @@ function Module(name, importName, requires, provides) {
     };
 }
 
-function InjectedDependencies(importName, dependencies) {
+function InjectedDependencies(importName, fileName, dependencies) {
     this.importName = importName;
+    this.fileName = fileName;
     this.dependencies = dependencies;
 }
 

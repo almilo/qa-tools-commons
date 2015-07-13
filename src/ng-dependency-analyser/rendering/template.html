@@ -26,6 +26,10 @@
                 stroke-width: 1.5px;
             }
 
+            .node[id] {
+                cursor: pointer;
+            }
+
             .edgePath path {
                 stroke: #333;
                 stroke-width: 1.5px;
@@ -44,16 +48,16 @@
             // MODULES
             {{~it.getModules() :module}}
               // Module as import name and name as label
-              g.setNode('{{= module.importName}}', {label: '{{= module.name}}', shape: 'rect'});
+              g.setNode('{{= module.importName}}', {id: '{{= module.importName}}', label: '{{= module.name}}', shape: 'rect'});
               {{~module.requires :required}}
 
               // Required as import name
-              g.setNode('{{= required}}', {shape: 'rect'});
+              g.setNode('{{= required}}', {id: '{{= required}}', shape: 'rect'});
               {{~}}
               {{~module.provides :provide}}
 
               // Provided as import name and name as label
-              g.setNode('{{= provide.importName}}', {label: '{{= provide.name}}', shape: 'ellipse'});
+              g.setNode('{{= provide.importName}}', {id: '{{= provide.importName}}', label: '{{= provide.name}}', shape: 'ellipse'});
               {{~}}
             {{~}}
 
@@ -72,10 +76,10 @@
             // DEPENDENCIES
             {{~it.getInjectedDependencies() :injectedDependency}}
               // File as import name where dependencies are injected
-              g.setNode('{{= injectedDependency.importName}}', {label: previousLabel(g, '{{= injectedDependency.importName}}'), shape: 'ellipse'});
+              g.setNode('{{= injectedDependency.importName}}', {id: '{{= injectedDependency.importName}}', label: previousLabel(g, '{{= injectedDependency.importName}}'), shape: 'ellipse'});
               {{~injectedDependency.dependencies :dependency}}
               // Injected dependency as import name with name as label
-              g.setNode('{{= dependency.importName}}', {label: '{{= dependency.name}}', shape: 'ellipse'});
+              g.setNode('{{= dependency.importName}}', {id: '{{= dependency.importName}}', label: '{{= dependency.name}}', shape: 'ellipse'});
               {{~}}
             {{~}}
 
@@ -94,10 +98,26 @@
             svgGroup.attr('transform', 'translate(' + xCenterOffset + ', 20)');
             svg.attr('height', g.graph().height + 40);
 
+            svg.select('g').selectAll('g.node').on('click', function(id) {
+                var fileName = getFileNameForImportName(id);
+
+                if (fileName) {
+                    var url = '{{= it.getUrlTemplate() || "" }}'.replace('${fileName}', fileName);
+
+                    window.open(url);
+                }
+            });
+
             function previousLabel(g, nodeId) {
                 var node = g.node(nodeId);
 
                 return node && node.label;
+            }
+
+            function getFileNameForImportName(importName) {
+                var importNamesToFileNames = {{= JSON.stringify(it.getImportNamesToFileNames()) }};
+
+                return importNamesToFileNames[importName];
             }
         </script>
     </body>

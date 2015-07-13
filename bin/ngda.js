@@ -16,6 +16,8 @@ var argv = yargs
     .describe('html', 'Generates the dependency graph as HTML file.')
     .boolean('overwrite')
     .describe('overwrite', 'Overwrites the output file if exists.')
+    .string('urlTemplate')
+    .describe('urlTemplate', 'Template for the URL to link the nodes to. The placeholder "${fileName}" will be substituted with the name of the file.')
     .help('h')
     .alias('h', 'help')
     .example('$0 -f "src/**/*.js"', 'Processes the files matcher as a "glob" matcher and prints the dependency report of all matched files.')
@@ -41,7 +43,7 @@ function argumentsChecker(argv) {
 
 var rendererNameAndFilename = getRendererNameAndFileName(argv);
 
-ngda(argv.files, rendererNameAndFilename.rendererName, rendererNameAndFilename.fileName, argv.overwrite);
+ngda(argv.files, rendererNameAndFilename.rendererName, rendererNameAndFilename.fileName, argv.overwrite, argv.urlTemplate);
 
 function getRendererNameAndFileName(argv) {
     var rendererName = _.find(['dot', 'png', 'html'], function (rendererName) {
