@@ -33,8 +33,16 @@ exports.asArray = function (value) {
     return value && !_.isArray(value) ? [value] : value;
 };
 
-exports.checkPathExists = function (filename) {
+function checkPathExists(filename) {
     var pathTo = path.relative(process.cwd(), path.dirname(filename));
 
     mkpath.sync(pathTo);
+}
+
+exports.checkPathExists = checkPathExists;
+
+exports.writeWithPath = function (filename, content) {
+    checkPathExists(filename);
+
+    fs.writeFileSync(filename, content);
 };

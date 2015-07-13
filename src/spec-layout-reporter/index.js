@@ -44,8 +44,12 @@ exports.Report = function () {
         }
     };
 
-    this.render = function (renderer) {
-        (renderer || defaultRenderer)(this);
+    this.render = function () {
+        var renderer = arguments[0];
+
+        arguments[0] = this;
+
+        (renderer || defaultRenderer).apply(undefined, arguments);
     };
 
     function createEntry(indentationLevel, text) {

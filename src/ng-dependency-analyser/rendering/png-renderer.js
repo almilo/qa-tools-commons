@@ -10,11 +10,9 @@ module.exports = function (report, outputFilename) {
         dotTemplate = dot.template(templateFile), tempDotFilename = path.join(shelljs.tempdir(), 'deps.dot'),
         dotCommand = 'dot ' + tempDotFilename + ' -Tpng -o' + outputFilename;
 
-    checkPathExists(outputFilename);
-
     fs.writeFileSync(tempDotFilename, dotTemplate(report));
 
-    var dotExitCode = shelljs.exec(dotCommand).code;
+    checkPathExists(outputFilename);
 
-    assert(dotExitCode === 0, 'Error executing "' + dotCommand + '". Please, make sure that "graphviz" is installed in your system and that the "dot" line command is available from the shell.');
+    assert(shelljs.exec(dotCommand).code === 0, 'Error executing "' + dotCommand + '". Please, make sure that "graphviz" is installed in your system and that the "dot" line command is available from the shell.');
 };
