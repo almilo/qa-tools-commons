@@ -1,0 +1,12 @@
+language: node_js
+node_js:
+- '0.11'
+- '0.10'
+deploy:
+  provider: npm
+  email: almilo@almilo.es
+  api_key:
+    secure: izg/NN+7Fby4i3GfcuQ0/HvhGHgVybTYspNsBiV8a9QWSkbTuUxLyZpG/NFPVIiU6Mv75NGufL3I87zexltMqHk/UV1bvbQiC2s22cDpfC0peYWuN7fXwcA3WzXdLzf+/gW8lCIur7DMqF22ikWRmGUmJ3JZz2LthmPGLVZK0/HKNuIi+c06kscP+9V9liwIQZzZ7cyS9lWBQhRv+sKF/hDMmMTIH+VlNH3g3nJ7VZPB9Id+6B3Tx8nB4EjHY81k0Wow8rrIKsEMbytRHSsy1uy4Wu8G8lWfy6GAC0KguvQY5P5B0f5BIv2ffPJQAFkWSneY5MJIWlQT1rbuAv5Hq995c4eaKLIFUibvi/AY2tJd11NW3xd7mQIkKtyOMTH19hzTlO831xYAULk4OjZDIEsxJj+oYgIfdjNQiMh70zanYqcKNqZBS2D2RRg1kip8dgHQv5HsQcXdXwsiiCey1ddU2IsXnnkj9+N0+UPQcuIKTyqdQBK7N76AAhZ7QqI+WjYwasavypVoBv+i81vIrO/Sh/O3I0nYtHBbgchVrcdJ63fIeflLnNFLb2jaHT2WcPRSUWeWv5CE8avTmhEyGY9/YzWtVMDR8kFXRJkiNvTDW3zkNLDbXy0k1XStoVCRa99jLLprSDrVOAs5CNoScaGdp3sc3ByWQj6s9HykBJM=
+  on:
+    tags: true
+    all_branches: true
