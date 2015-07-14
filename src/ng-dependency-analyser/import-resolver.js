@@ -1,10 +1,26 @@
 var path = require('path'), _ = require('lodash');
 
-exports.getImportNameForFilename = function (filename) {
-    return path.basename(filename, path.extname(filename));
+exports.getImportNameForFileName = extractFileName;
+
+exports.getImportNameForImportName = function (importName) {
+    return isLocalModule(importName) ? extractFileName(importName) : asExternalModuleName(importName);
+
+    function isLocalModule(importName) {
+        return importName.indexOf('.') === 0;
+    }
+
+    function asExternalModuleName(importName) {
+        var matches = importName.match(/(.*)\/module/);
+
+        return (matches && matches[1]) || importName;
+    }
 };
 
-exports.ImportResolver = function (filename) {
+function extractFileName(fileName) {
+    return path.basename(fileName, path.extname(fileName));
+}
+
+exports.ImportResolver = function (fileName) {
     var importsNamesAndIdentifiers = [];
 
     this.addImportNameAndIdentifiers = function (importNameAndIdentifiers) {
@@ -18,7 +34,7 @@ exports.ImportResolver = function (filename) {
         });
 
         if (!importNameAndIdentifiers) {
-            console.warn('Warning, could not resolve import for identifier: "' + identifier + '" in file: "' + filename + '".');
+            console.warn('Warning, could not resolve import for identifier: "' + identifier + '" in file: "' + fileName + '".');
         }
 
         return importNameAndIdentifiers && importNameAndIdentifiers.importName;

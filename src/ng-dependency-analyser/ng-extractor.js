@@ -4,7 +4,7 @@ var _ = require('lodash'), estraverse = require('estraverse'),
     esExtractor = require('./es-extractor'), extractImportSourceAndSpecifiers = esExtractor.extractImportSourceAndSpecifiers,
     extractFunctionParameterNames = esExtractor.extractFunctionParameterNames, extractCalledMember = esExtractor.extractCalledMember,
     importResolver = require('./import-resolver'), ImportResolver = importResolver.ImportResolver,
-    getImportNameForFilename = importResolver.getImportNameForFilename;
+    getImportNameForFileName = importResolver.getImportNameForFileName, getImportNameForImportName = importResolver.getImportNameForImportName;
 
 exports.extractModules = function (asts, filenames) {
     return asts
@@ -24,7 +24,7 @@ exports.extractDependencies = function (asts, filenames) {
 
 function extractModuleDefinition(ast, fileName) {
     var module = undefined, requires = [], provides = [], importResolver = new ImportResolver(fileName),
-        importName = getImportNameForFilename(fileName);
+        importName = getImportNameForFileName(fileName);
 
     estraverse.traverse(ast, {
         leave: function (node) {
@@ -86,7 +86,7 @@ function extractInjectableDependencies(ast, fileName) {
 
 function extractInjectedDependencies(injectableDependencies) {
     return function (ast, fileName) {
-        var injectedDependencies = undefined, importName = getImportNameForFilename(fileName);
+        var injectedDependencies = undefined, importName = getImportNameForFileName(fileName);
 
         estraverse.traverse(ast, {
             enter: function (node) {
@@ -150,7 +150,7 @@ function extractImportNameAndIdentifiers(node) {
             identifiers.push(specifier.local.name);
         });
 
-        return {importName: getImportNameForFilename(name), identifiers: identifiers};
+        return {importName: getImportNameForImportName(name), identifiers: identifiers};
     }
 }
 
