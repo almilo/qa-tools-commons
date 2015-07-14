@@ -1,4 +1,4 @@
-var utils = require('../src/utils'), assert = utils.assert, expandFilenames = utils.expandFilenames, asArray = utils.asArray,
+var utils = require('../src/utils'), assert = utils.assert, expandFileNames = utils.expandFileNames, asArray = utils.asArray,
     Report = require('../src/ng-dependency-analyser').Report;
 
 module.exports = function (files, rendererName, outputFilename, overwrite, urlTemplate) {
@@ -8,5 +8,5 @@ module.exports = function (files, rendererName, outputFilename, overwrite, urlTe
 
     var renderer = rendererName && require('../src/ng-dependency-analyser/rendering/' + rendererName + '-renderer');
 
-    new Report(expandFilenames(files), urlTemplate).render(renderer, outputFilename, overwrite);
+    new Report(expandFileNames(files), urlTemplate).render(renderer, outputFilename, overwrite);
 };
