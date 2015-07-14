@@ -3,6 +3,8 @@ var _ = require('lodash'), estraverse = require('estraverse'),
     callWithAstAndFilename = utils.callWithAstAndFilename,
     esExtractor = require('./es-extractor'), extractImportSourceAndSpecifiers = esExtractor.extractImportSourceAndSpecifiers,
     extractFunctionParameterNames = esExtractor.extractFunctionParameterNames, extractCalledMember = esExtractor.extractCalledMember,
+    extractVariableIdentifierAndInitializer = esExtractor.extractVariableIdentifierAndInitializer,
+    extractCalledFunctionAndArguments = esExtractor.extractCalledFunctionAndArguments,
     importResolver = require('./import-resolver'), ImportResolver = importResolver.ImportResolver,
     getImportNameForFileName = importResolver.getImportNameForFileName, getImportNameForImportName = importResolver.getImportNameForImportName;
 
@@ -151,6 +153,16 @@ function extractImportNameAndIdentifiers(node) {
         });
 
         return {importName: getImportNameForImportName(name), identifiers: identifiers};
+    }
+
+    var variableIdentifierAndInitializer = extractVariableIdentifierAndInitializer(node),
+        initializerFunctionAndArguments = variableIdentifierAndInitializer && extractCalledFunctionAndArguments(variableIdentifierAndInitializer.initializer);
+
+    if (initializerFunctionAndArguments && initializerFunctionAndArguments.identifier === 'require' && initializerFunctionAndArguments.arguments[0].type === 'Literal') {
+        return {
+            importName: getImportNameForFilename(initializerFunctionAndArguments.arguments[0].value),
+            identifiers: [variableIdentifierAndInitializer.identifier]
+        };
     }
 }
 
