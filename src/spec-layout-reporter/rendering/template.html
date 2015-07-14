@@ -3,12 +3,74 @@
     <head lang="en">
         <meta charset="UTF-8">
         <title>Specification Layout Report</title>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+        <style>
+            h1 {
+                margin-top: 1em;
+                margin-bottom: 1em;
+            }
+
+            .index {
+                margin-top: 2em;
+            }
+
+            .content {
+                margin-top: 4em;
+            }
+
+            .file {
+                margin-bottom: 2em;
+            }
+
+            .indent-0 {
+                margin-left: 2em;
+            }
+
+            .indent-1 {
+                margin-left: 4em;
+            }
+
+            .indent-2 {
+                margin-left: 6em;
+            }
+
+            .indent-3 {
+                margin-left: 8em;
+            }
+
+            .indent-4 {
+                margin-left: 10em;
+            }
+        </style>
     </head>
-    <body>
-        <pre>
-        {{~it.entries :entry}}
-        {{=entry}}<br>
-        {{~}}
-        </pre>
+    <body class="container">
+        <h1>Specification Layout Report</h1>
+
+        <div class="index">
+            <p class="lead">Index</p>
+            {{~it.getFiles() :file}}
+            <h5>
+                <a href="#{{= file.getFileName()}}">{{=file.getFileName()}}</a>
+            </h5>
+            {{~}}
+        </div>
+
+        <div class="content">
+            <p class="lead">Content</p>
+
+            {{~it.getFiles() :file}}
+            <div class="file">
+                <a name="{{= file.getFileName()}}"></a>
+                <h5>
+                    <a href="{{= (it.getUrlTemplate() || '').replace('${fileName}', file.getFileName())}}">{{=file.getFileName()}}</a>
+                </h5>
+                {{~file.getEntries() :entry}}
+                <p class="indent-{{= entry.indentationLevel}}">{{=entry.text}}</p>
+                {{~}}
+            </div>
+            {{~}}
+        </div>
     </body>
+    <script>
+    </script>
 </html>

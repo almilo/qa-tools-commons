@@ -12,6 +12,8 @@ var argv = yargs
     .describe('html', 'Generates the specification layout as HTML file.')
     .boolean('overwrite')
     .describe('overwrite', 'Overwrites the output file if exists.')
+    .string('urlTemplate')
+    .describe('urlTemplate', 'Template for the URL to link the files to. The placeholder "${fileName}" will be substituted with the name of the file.')
     .help('h')
     .alias('h', 'help')
     .example('$0 -f "src/**/*.spec.js"', 'Processes the files matcher as a "glob" matcher and prints the specification layout of all matched files.')
@@ -30,4 +32,4 @@ function argumentsChecker(argv) {
     return true;
 }
 
-speclr(argv.files, argv.html && 'html', argv.html, argv.overwrite);
+speclr(argv.files, argv.html && 'html', argv.html, argv.overwrite, argv.urlTemplate);

@@ -1,29 +1,26 @@
 var utils = require('../utils'), jsParser = utils.jsParser, estraverse = require('estraverse'),
     defaultRenderer = require('./rendering/console-renderer');
 
-exports.Report = function () {
-    var entries = [];
+exports.Report = function (urlTemplate) {
+    var files = [];
 
-    this.addEntry = function (indentationLevel, text) {
-        entries.push(createEntry(indentationLevel, text));
+    this.getFiles = function () {
+        return files;
     };
 
-    this.getEntries = function () {
-        return entries;
+    this.getUrlTemplate = function () {
+        return urlTemplate;
     };
 
-    this.add = function (filename) {
-        var indentationLevel = 0, report = this;
+    this.addFile = function (fileName) {
+        var indentationLevel = 0, entries = [];
 
-        report.addEntry(0, 'File: ' + filename);
-        report.addEntry(0, '');
-
-        estraverse.traverse(jsParser(filename), {
+        estraverse.traverse(jsParser(fileName), {
             enter: function (node) {
                 var calledFunction = functionCall(node);
 
                 if (calledFunction === 'describe' || calledFunction === 'it') {
-                    report.addEntry(indentationLevel, node.arguments[0].value);
+                    entries.push(createEntry(indentationLevel, node.arguments[0].value));
 
                     if (calledFunction === 'describe') {
                         indentationLevel++;
@@ -37,7 +34,7 @@ exports.Report = function () {
             }
         });
 
-        report.addEntry(0, '');
+        files.push(new File(fileName, entries));
 
         function functionCall(node) {
             return node.type === 'CallExpression' && node.callee.type === 'Identifier' ? node.callee.name : undefined;
@@ -59,3 +56,13 @@ exports.Report = function () {
         };
     }
 };
+
+function File(fileName, entries) {
+    this.getFileName = function () {
+        return fileName;
+    };
+
+    this.getEntries = function () {
+        return entries;
+    };
+}
