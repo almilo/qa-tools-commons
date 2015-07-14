@@ -50,7 +50,7 @@
             <p class="lead">Index</p>
             {{~it.getFiles() :file}}
             <h5>
-                <a href="#{{= file.getFileName()}}">{{=file.getFileName()}}</a>
+                <a href="#{{= file.getName()}}">{{=file.getName()}}</a>
             </h5>
             {{~}}
         </div>
@@ -60,12 +60,12 @@
 
             {{~it.getFiles() :file}}
             <div class="file">
-                <a name="{{= file.getFileName()}}"></a>
+                <a name="{{= file.getName()}}"></a>
                 <h5>
-                    <a href="{{= (it.getUrlTemplate() || '').replace('${fileName}', file.getFileName())}}">{{=file.getFileName()}}</a>
+                    <a href="{{= (it.getUrlTemplate() || '').replace('${fileName}', file.getName())}}">{{=file.getName()}}</a>
                 </h5>
                 {{~file.getEntries() :entry}}
-                <p class="indent-{{= entry.indentationLevel}}">{{=entry.text}}</p>
+                <p class="indent-{{= entry.getIndentationLevel()}}">{{=entry.getText()}}</p>
                 {{~}}
             </div>
             {{~}}

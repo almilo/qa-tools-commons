@@ -1,5 +1,6 @@
 var _ = require('lodash'), estraverse = require('estraverse'),
     utils = require('../utils'), concatAll = utils.concatAll, assert = utils.assert, asArray = utils.asArray,
+    callWithAstAndFilename = utils.callWithAstAndFilename,
     esExtractor = require('./es-extractor'), extractImportSourceAndSpecifiers = esExtractor.extractImportSourceAndSpecifiers,
     extractFunctionParameterNames = esExtractor.extractFunctionParameterNames, extractCalledMember = esExtractor.extractCalledMember,
     importResolver = require('./import-resolver'), ImportResolver = importResolver.ImportResolver,
@@ -179,12 +180,6 @@ function createResolvedDependency(importResolver, identifier) {
     var importName = importResolver.getImportNameForIdentifier(identifier);
 
     return importName && new Dependency(identifier, importName);
-}
-
-function callWithAstAndFilename(fn, filenames) {
-    return function (ast, index) {
-        return fn.call(undefined, ast, filenames[index]);
-    }
 }
 
 function callIfNotFalsy(value, fn) {

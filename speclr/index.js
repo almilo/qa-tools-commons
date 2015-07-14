@@ -6,13 +6,7 @@ module.exports = function (files, rendererName, outputFilename, overwrite, urlTe
 
     files = asArray(files);
 
-    var renderer = rendererName && require('../src/spec-layout-reporter/rendering/' + rendererName + '-renderer'),
-        report = new Report(urlTemplate);
+    var renderer = rendererName && require('../src/spec-layout-reporter/rendering/' + rendererName + '-renderer');
 
-    expandFileNames(files, true)
-        .forEach(function (fileName) {
-            report.addFile(fileName);
-        });
-
-    report.render(renderer, outputFilename, overwrite);
+    new Report(expandFileNames(files, true), urlTemplate).render(renderer, outputFilename, overwrite);
 };

@@ -46,3 +46,9 @@ exports.writeWithPath = function (fileName, content) {
 
     fs.writeFileSync(fileName, content);
 };
+
+exports.callWithAstAndFilename = function (fn, filenames) {
+    return function (ast, index) {
+        return fn.call(undefined, ast, filenames[index]);
+    }
+};
