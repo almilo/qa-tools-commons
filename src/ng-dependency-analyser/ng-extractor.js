@@ -160,7 +160,7 @@ function extractImportNameAndIdentifiers(node) {
 
     if (initializerFunctionAndArguments && initializerFunctionAndArguments.identifier === 'require' && initializerFunctionAndArguments.arguments[0].type === 'Literal') {
         return {
-            importName: getImportNameForFilename(initializerFunctionAndArguments.arguments[0].value),
+            importName: getImportNameForFileName(initializerFunctionAndArguments.arguments[0].value),
             identifiers: [variableIdentifierAndInitializer.identifier]
         };
     }
