@@ -1,14 +1,10 @@
 digraph modules {
-  // MODULES
   {{~it.getModules() :module}}
-    // Module as import name and name as label
     "{{= module.importName}}" [shape="rect", label="{{= module.name}} <<{{= module.layer}}>>"]
     {{~module.requires :required}}
-    // Required as import name
     "{{= required}}" [shape="rect"]
     {{~}}
     {{~module.provides :provide}}
-    // Provided as import name and name as label
     "{{= provide.importName}}" [shape="{{? provide.type === 'directive'}}diamond{{?}}{{? provide.type !== 'directive'}}ellipse{{?}}", label="{{= provide.name}}"]
     {{~}}
   {{~}}
@@ -25,12 +21,9 @@ digraph modules {
     {{~}}
   {{~}}
 
-  // DEPENDENCIES
   {{~it.getInjectedDependencies() :injectedDependency}}
-  // File as import name where dependencies are injected
   "{{= injectedDependency.importName }}"
   {{~injectedDependency.dependencies :dependency}}
-  // Injected dependency as import name with name as label
   "{{= dependency.importName}}" [shape="ellipse", label="{{= dependency.name}}"]
   {{~}}
   {{~}}
