@@ -9,7 +9,7 @@ digraph modules {
     {{~}}
     {{~module.provides :provide}}
     // Provided as import name and name as label
-    "{{= provide.importName}}" [shape="ellipse", label="{{= provide.name}}"]
+    "{{= provide.importName}}" [shape="{{? provide.type === 'directive'}}diamond{{?}}{{? provide.type !== 'directive'}}ellipse{{?}}", label="{{= provide.name}}"]
     {{~}}
   {{~}}
 
@@ -28,7 +28,7 @@ digraph modules {
   // DEPENDENCIES
   {{~it.getInjectedDependencies() :injectedDependency}}
   // File as import name where dependencies are injected
-  "{{= injectedDependency.importName }}" [shape="ellipse"]
+  "{{= injectedDependency.importName }}"
   {{~injectedDependency.dependencies :dependency}}
   // Injected dependency as import name with name as label
   "{{= dependency.importName}}" [shape="ellipse", label="{{= dependency.name}}"]

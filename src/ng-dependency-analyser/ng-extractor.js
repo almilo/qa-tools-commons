@@ -39,11 +39,11 @@ function extractModuleDefinition(ast, fileName) {
                 requires = moduleNameAndRequires.requires;
             });
 
-            callIfNotFalsy(extractInjectableDependencyName(node), function (providedDependencyName) {
+            callIfNotFalsy(extractInjectableDependencyNameAndType(node), function (providedDependencyNameAndType) {
                 if (module) {
-                    provides.push(providedDependencyName);
+                    provides.push(providedDependencyNameAndType);
                 } else {
-                    console.warn('Warning, found injectable: "' + providedDependencyName + '" without current module in: "' + fileName + '".');
+                    console.warn('Warning, found injectable: "' + providedDependencyNameAndType.name + '" without current module in: "' + fileName + '".');
                 }
             });
         }
@@ -60,8 +60,8 @@ function extractModuleDefinition(ast, fileName) {
         provides
             .map(_.partial(createResolvedDependency, importResolver))
             .filter(isNotUndefined)
-            .forEach(function (require) {
-                module.addProvide(require);
+            .forEach(function (provide) {
+                module.addProvide(provide);
             });
     }
 
@@ -69,19 +69,19 @@ function extractModuleDefinition(ast, fileName) {
 }
 
 function extractInjectableDependencies(ast, fileName) {
-    var injectableDependenciesNames = [], importResolver = new ImportResolver(fileName);
+    var injectableDependenciesTypesAndNames = [], importResolver = new ImportResolver(fileName);
 
     estraverse.traverse(ast, {
         enter: function (node) {
             callIfNotFalsy(extractImportNameAndIdentifiers(node), importResolver.addImportNameAndIdentifiers.bind(importResolver));
 
-            callIfNotFalsy(extractInjectableDependencyName(node), injectableDependenciesNames.push.bind(injectableDependenciesNames));
+            callIfNotFalsy(extractInjectableDependencyNameAndType(node), injectableDependenciesTypesAndNames.push.bind(injectableDependenciesTypesAndNames));
 
-            callIfNotFalsy(extractInjectedControllerIdentifier(node), injectableDependenciesNames.push.bind(injectableDependenciesNames));
+            callIfNotFalsy(extractInjectedController(node), injectableDependenciesTypesAndNames.push.bind(injectableDependenciesTypesAndNames));
         }
     });
 
-    return injectableDependenciesNames
+    return injectableDependenciesTypesAndNames
         .map(_.partial(createResolvedDependency, importResolver))
         .filter(isNotUndefined);
 }
@@ -93,7 +93,7 @@ function extractInjectedDependencies(injectableDependencies) {
         estraverse.traverse(ast, {
             enter: function (node) {
                 var injectedDependenciesCandidates = extractFunctionParameterNames(node) ||
-                    asArray(extractInjectedControllerIdentifier(node)) ||
+                    asArray((extractInjectedController(node) || {}).name) ||
                     [];
 
                 injectedDependenciesCandidates.forEach(function (injectedDependencyCandidate) {
@@ -166,13 +166,21 @@ function extractImportNameAndIdentifiers(node) {
     }
 }
 
-function extractInjectableDependencyName(node) {
-    var injectableDependencyFactoryMethods = ['factory', 'service', 'provider', 'directive', 'controller'], calledMember = extractCalledMember(node);
+function extractInjectableDependencyNameAndType(node) {
+    var dependencyTypes = {
+            factory: 'service',
+            service: 'service',
+            provider: 'service',
+            directive: 'directive',
+            controller: 'controller'
+        },
+        injectableDependencyFactoryMethods = ['factory', 'service', 'provider', 'directive', 'controller'],
+        calledMember = extractCalledMember(node), name = injectableDependencyFactoryMethods.indexOf(calledMember) >= 0 && node.arguments[0].value;
 
-    return injectableDependencyFactoryMethods.indexOf(calledMember) >= 0 && node.arguments[0].value;
+    return name && {name: name, type: dependencyTypes[calledMember]};
 }
 
-function extractInjectedControllerIdentifier(node) {
+function extractInjectedController(node) {
     if (node.type === 'ObjectExpression') {
         var result = node.properties
             .filter(function (property) {
@@ -184,14 +192,14 @@ function extractInjectedControllerIdentifier(node) {
 
         assert(result.length <= 1, 'Error, found more that one controller property: + "' + result + '".');
 
-        return result[0];
+        return result[0] && {name: result[0], type: 'controller'};
     }
 }
 
-function createResolvedDependency(importResolver, identifier) {
-    var importName = importResolver.getImportNameForIdentifier(identifier);
+function createResolvedDependency(importResolver, nameAndType) {
+    var importName = importResolver.getImportNameForIdentifier(nameAndType.name);
 
-    return importName && new Dependency(identifier, importName);
+    return importName && new Dependency(nameAndType.name, nameAndType.type, importName);
 }
 
 function callIfNotFalsy(value, fn) {
@@ -227,8 +235,9 @@ function InjectedDependencies(importName, fileName, dependencies) {
     this.dependencies = dependencies;
 }
 
-function Dependency(name, importName) {
+function Dependency(name, type, importName) {
     this.name = name;
+    this.type = type;
     this.importName = importName;
 }
 
