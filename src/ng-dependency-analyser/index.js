@@ -1,4 +1,4 @@
-var jsParser = require('../utils').jsParser, defaultRenderer = require('./rendering/console-renderer'),
+var _ = require('lodash'), jsParser = require('../utils').jsParser, defaultRenderer = require('./rendering/console-renderer'),
     ngExtractor = require('./ng-extractor'), extractModules = ngExtractor.extractModules,
     extractDependencies = ngExtractor.extractDependencies;
 
@@ -6,7 +6,7 @@ exports.Report = function (fileNames, urlTemplate) {
     var asts = fileNames.map(jsParser),
         modules = extractModules(asts, fileNames),
         injectedDependencies = extractDependencies(asts, fileNames),
-        importNamesToFileNames = extractFileNames(modules, injectedDependencies);
+        importNameToItem = indexByImportName(modules, injectedDependencies);
 
     this.getUrlTemplate = function () {
         return urlTemplate;
@@ -20,8 +20,9 @@ exports.Report = function (fileNames, urlTemplate) {
         return injectedDependencies;
     };
 
-    this.getImportNamesToFileNames = function () {
-        return importNamesToFileNames;
+
+    this.getData = function () {
+        return importNameToItem;
     };
 
     this.render = function () {
@@ -32,16 +33,23 @@ exports.Report = function (fileNames, urlTemplate) {
         (renderer || defaultRenderer).apply(undefined, arguments);
     };
 
-    function extractFileNames(modules, injectedDependencies) {
-        var importNamesToFileNames = {};
+    function indexByImportName(modules, injectedDependencies) {
+        var importNamesToItem = {};
 
-        modules.forEach(addImportNameToFileNameMapping);
-        injectedDependencies.forEach(addImportNameToFileNameMapping);
+        modules.forEach(addModuleItems);
+        injectedDependencies.forEach(addItem);
 
-        return importNamesToFileNames;
+        return importNamesToItem;
 
-        function addImportNameToFileNameMapping(itemWithImportNameAndFileName) {
-            importNamesToFileNames[itemWithImportNameAndFileName.importName] = itemWithImportNameAndFileName.fileName;
+        function addModuleItems(module) {
+            addItem(module);
+            module.provides.forEach(addItem);
+        }
+
+        function addItem(item) {
+            var currentItem = importNamesToItem[item.importName] || {};
+
+            importNamesToItem[item.importName] = _.extend(currentItem, item);
         }
     }
 };

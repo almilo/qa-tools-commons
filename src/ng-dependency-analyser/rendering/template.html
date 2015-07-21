@@ -9,6 +9,8 @@
         <script src="http://cpettitt.github.io/project/graphlib-dot/latest/graphlib-dot.js"></script>
         <style>
             body {
+                width: 6000px;
+                height: 4000px;
                 font-weight: 300;
                 font-family: Arial, sans-serif;
             }
@@ -25,11 +27,6 @@
             h1 {
                 margin-top: 1em;
                 margin-bottom: 1em;
-            }
-
-            #ngda-container {
-                width: 100%;
-                overflow: scroll;
             }
 
             .node rect, .node ellipse, .node polygon {
@@ -51,21 +48,19 @@
     <body>
         <h1 class="text-center">Angular Dependencies Graph</h1>
 
-        <div id="ngda-container">
-            <svg id="ngda" width="6000" height="4000"></svg>
-        </div>
+        <svg id="ngda" width="6000" height="4000"></svg>
 
         <script id="dot" language="text/dot">
             {{= it.dot}}
         </script>
 
         <script>
-            var dot = document.getElementById('dot').innerHTML, g = graphlibDot.read(dot),
-                    svg = renderGraph('#ngda', g), ngdaContainer = document.getElementById('ngda-container');
-
-            ngdaContainer.scrollLeft = (ngdaContainer.scrollWidth - ngdaContainer.clientWidth) / 2;
+            var data = {{= JSON.stringify(it.report.getData())}},
+                dot = document.getElementById('dot').innerHTML, g = graphlibDot.read(dot),
+                svg = renderGraph('#ngda', g);
 
             svg.select('g').selectAll('g.node').on('click', openFile);
+            svg.select('g').selectAll('g.node rect, g.node ellipse, g.node polygon').style('fill', getFillColor);
 
             function renderGraph(svgSelector, g) {
                 var render = new dagreD3.render(), svg = d3.select(svgSelector), svgGroup = svg.append('g');
@@ -81,7 +76,7 @@
             }
 
             function openFile(id) {
-                var fileName = getFileNameForImportName(id);
+                var fileName = data[id].fileName;
 
                 if (fileName) {
                     window.open(replaceFileNamePlaceholder(id));
@@ -92,10 +87,18 @@
                 }
             }
 
-            function getFileNameForImportName(importName) {
-                var importNamesToFileNames = {{= JSON.stringify(it.report.getImportNamesToFileNames())}};
+            function getFillColor(id) {
+                var layerColors = {
+                            'app': 'white',
+                            'lib/ui': 'ivory',
+                            'lib/core': 'aliceblue'
+                        },
+                        typeColors = {
+                            'directive': 'mistyrose'
+                        },
+                        itemData = (data[id] || {});
 
-                return importNamesToFileNames[importName];
+                return typeColors[itemData.type] || layerColors[itemData.layer];
             }
         </script>
     </body>
