@@ -62,11 +62,11 @@
             // MODULES
             {{~it.getModules() :module}}
               // Module as import name and name as label
-              g.setNode('{{= module.importName}}', {id: '{{= module.importName}}', label: '{{= module.name}}', shape: 'rect'});
+              g.setNode('{{= module.importName}}', {id: '{{= module.importName}}', label: '{{= module.name}} <<{{= module.layer}}>>', shape: 'rect'});
               {{~module.requires :required}}
 
               // Required as import name
-              g.setNode('{{= required}}', {id: '{{= required}}', shape: 'rect'});
+              g.setNode('{{= required}}', {id: '{{= required}}', label: previousLabel(g, '{{= module.importName}}'), shape: 'rect'});
               {{~}}
               {{~module.provides :provide}}
 

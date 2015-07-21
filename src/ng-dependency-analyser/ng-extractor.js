@@ -26,7 +26,7 @@ exports.extractDependencies = function (asts, filenames) {
 
 function extractModuleDefinition(ast, fileName) {
     var module = undefined, requires = [], provides = [], importResolver = new ImportResolver(fileName),
-        importName = getImportNameForFileName(fileName);
+        importName = getImportNameForFileName(fileName), layer = getLayerForFileName(fileName);
 
     estraverse.traverse(ast, {
         leave: function (node) {
@@ -35,7 +35,7 @@ function extractModuleDefinition(ast, fileName) {
             callIfNotFalsy(extractModuleNameAndRequires(node, fileName), function (moduleNameAndRequires) {
                 assert(!module, 'Error, more than one module defined in: "' + fileName + '".');
 
-                module = new Module(moduleNameAndRequires.name, importName, fileName);
+                module = new Module(moduleNameAndRequires.name, importName, fileName, layer);
                 requires = moduleNameAndRequires.requires;
             });
 
@@ -204,12 +204,13 @@ function isNotUndefined(item) {
     return item !== undefined;
 }
 
-function Module(name, importName, fileName, requires, provides) {
+function Module(name, importName, fileName, layer) {
     this.name = name;
     this.importName = importName;
     this.fileName = fileName;
-    this.requires = requires || [];
-    this.provides = provides || [];
+    this.layer = layer;
+    this.requires = [];
+    this.provides = [];
 
     this.addRequire = function (require) {
         this.requires.push(require);
@@ -229,4 +230,11 @@ function InjectedDependencies(importName, fileName, dependencies) {
 function Dependency(name, importName) {
     this.name = name;
     this.importName = importName;
+}
+
+function getLayerForFileName(fileName) {
+    // example: src/lib/ui/**/foo.js
+    var match = fileName.match('.*src\/((app|lib)(\/.*?)?)\/.*\.js');
+
+    return match ? match[1] : fileName;
 }

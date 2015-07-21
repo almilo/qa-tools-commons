@@ -2,7 +2,7 @@ digraph modules {
   // MODULES
   {{~it.getModules() :module}}
     // Module as import name and name as label
-    "{{= module.importName}}" [shape="box", label="{{= module.name}}"]
+    "{{= module.importName}}" [shape="box", label="{{= module.name}} <<{{= module.layer}}>>"]
     {{~module.requires :required}}
     // Required as import name
     "{{= required}}" [shape="box"]
