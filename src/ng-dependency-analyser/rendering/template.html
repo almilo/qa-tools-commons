@@ -6,10 +6,11 @@
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
         <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
         <script src="http://cpettitt.github.io/project/dagre-d3/latest/dagre-d3.js"></script>
+        <script src="http://cpettitt.github.io/project/graphlib-dot/latest/graphlib-dot.js"></script>
         <style>
             body {
                 font-weight: 300;
-                font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+                font-family: Arial, sans-serif;
             }
 
             svg {
@@ -34,7 +35,7 @@
             .node rect, .node ellipse {
                 stroke: #999;
                 fill: #fff;
-                stroke-width: 1.5px;
+                stroke-width: 1px;
             }
 
             .node[id] {
@@ -43,96 +44,56 @@
 
             .edgePath path {
                 stroke: #333;
-                stroke-width: 1.5px;
+                stroke-width: 1px;
             }
         </style>
     </head>
-    <body class="container">
+    <body>
         <h1 class="text-center">Angular Dependencies Graph</h1>
+
         <div id="ngda-container">
-            <svg id="ngda" width="4096" height="2048"></svg>
+            <svg id="ngda" width="6000" height="4000"></svg>
         </div>
+
+        <script id="dot" language="text/dot">
+            {{= it.dot}}
+        </script>
+
         <script>
-            var g = new dagreD3.graphlib.Graph()
-                    .setGraph({})
-                    .setDefaultEdgeLabel(function () {
-                        return {};
-                    });
+            var dot = document.getElementById('dot').innerHTML, g = graphlibDot.read(dot),
+                    svg = renderGraph('#ngda', g), ngdaContainer = document.getElementById('ngda-container');
 
-            // MODULES
-            {{~it.getModules() :module}}
-              // Module as import name and name as label
-              g.setNode('{{= module.importName}}', {id: '{{= module.importName}}', label: '{{= module.name}} <<{{= module.layer}}>>', shape: 'rect'});
-              {{~module.requires :required}}
-
-              // Required as import name
-              g.setNode('{{= required}}', {id: '{{= required}}', label: previousLabel(g, '{{= module.importName}}'), shape: 'rect'});
-              {{~}}
-              {{~module.provides :provide}}
-
-              // Provided as import name and name as label
-              g.setNode('{{= provide.importName}}', {id: '{{= provide.importName}}', label: '{{= provide.name}}', shape: 'ellipse'});
-              {{~}}
-            {{~}}
-
-            {{~it.getModules() :module}}
-              {{~module.requires :required}}
-              g.setEdge('{{= module.importName}}', '{{= required }}', {label: 'requires'});
-              {{~}}
-            {{~}}
-
-            {{~it.getModules() :module}}
-              {{~module.provides :provide}}
-              g.setEdge('{{= module.importName}}', '{{= provide.importName }}', {label: 'provides'});
-              {{~}}
-            {{~}}
-
-            // DEPENDENCIES
-            {{~it.getInjectedDependencies() :injectedDependency}}
-              // File as import name where dependencies are injected
-              g.setNode('{{= injectedDependency.importName}}', {id: '{{= injectedDependency.importName}}', label: previousLabel(g, '{{= injectedDependency.importName}}'), shape: 'ellipse'});
-              {{~injectedDependency.dependencies :dependency}}
-              // Injected dependency as import name with name as label
-              g.setNode('{{= dependency.importName}}', {id: '{{= dependency.importName}}', label: '{{= dependency.name}}', shape: 'ellipse'});
-              {{~}}
-            {{~}}
-
-            {{~it.getInjectedDependencies() :injectedDependency}}
-            {{~injectedDependency.dependencies :dependency}}
-              g.setEdge('{{= injectedDependency.importName}}', '{{= dependency.importName }}', {label: 'uses'});
-            {{~}}
-            {{~}}
-
-            var render = new dagreD3.render(), svg = d3.select('#ngda'), svgGroup = svg.append('g');
-
-            render(d3.select('#ngda g'), g);
-
-            var xCenterOffset = (svg.attr('width') - g.graph().width) / 2;
-
-            svgGroup.attr('transform', 'translate(' + xCenterOffset + ', 20)');
-            svg.attr('height', g.graph().height + 40);
-
-            var ngdaContainer = document.getElementById('ngda-container');
             ngdaContainer.scrollLeft = (ngdaContainer.scrollWidth - ngdaContainer.clientWidth) / 2;
 
-            svg.select('g').selectAll('g.node').on('click', function(id) {
+            svg.select('g').selectAll('g.node').on('click', openFile);
+
+            function renderGraph(svgSelector, g) {
+                var render = new dagreD3.render(), svg = d3.select(svgSelector), svgGroup = svg.append('g');
+
+                render(d3.select(svgSelector + ' g'), g);
+
+                var xCenterOffset = (svg.attr('width') - g.graph().width) / 2;
+
+                svgGroup.attr('transform', 'translate(' + xCenterOffset + ', 20)');
+                svg.attr('height', g.graph().height + 40);
+
+                return svg;
+            }
+
+            function openFile(id) {
                 var fileName = getFileNameForImportName(id);
 
                 if (fileName) {
-                    var url = '{{= it.getUrlTemplate() || "" }}'.replace('${fileName}', fileName);
-
-                    window.open(url);
+                    window.open(replaceFileNamePlaceholder(id));
                 }
-            });
 
-            function previousLabel(g, nodeId) {
-                var node = g.node(nodeId);
-
-                return node && node.label;
+                function replaceFileNamePlaceholder(id) {
+                    return '{{= it.report.getUrlTemplate() || "" }}'.replace('${fileName}', id);
+                }
             }
 
             function getFileNameForImportName(importName) {
-                var importNamesToFileNames = {{= JSON.stringify(it.getImportNamesToFileNames()) }};
+                var importNamesToFileNames = {{= JSON.stringify(it.report.getImportNamesToFileNames())}};
 
                 return importNamesToFileNames[importName];
             }
