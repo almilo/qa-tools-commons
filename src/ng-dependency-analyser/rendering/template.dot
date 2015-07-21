@@ -1,6 +1,30 @@
-digraph modules {
+digraph ngda {
+  compound = true;
+
+  subgraph ui {
+    {{~it.getData() :item}}
+    {{? item.layer === 'lib/ui'}}
+    "{{=item.importName}}"
+    "{{=item.importName}}" -> "to-core" [style="invis"]
+    {{?}}
+    {{~}}
+    "to-core" [style="invis", label=""]
+  }
+
+  subgraph core {
+    "from-ui" [style="invis", label=""]
+    {{~it.getData() :item}}
+    {{? item.layer === 'lib/core'}}
+    "from-ui" -> "{{=item.importName}}" [style="invis"]
+    "{{=item.importName}}"
+    {{?}}
+    {{~}}
+  }
+
+  "to-core" -> "from-ui" [style="invis"]
+
   {{~it.getModules() :module}}
-    "{{= module.importName}}" [shape="rect", label="{{= module.name}} <<{{= module.layer}}>>"]
+    "{{= module.importName}}" [shape="rect", label="{{= module.name}}"]
     {{~module.requires :required}}
     "{{= required}}" [shape="rect"]
     {{~}}

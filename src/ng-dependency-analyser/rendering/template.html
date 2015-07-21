@@ -29,7 +29,7 @@
                 margin-bottom: 1em;
             }
 
-            .node rect, .node ellipse, .node polygon {
+            .cluster, .node rect, .node ellipse, .node polygon {
                 stroke: #999;
                 fill: #fff;
                 stroke-width: 1px;
@@ -42,6 +42,7 @@
             .edgePath path {
                 stroke: #333;
                 stroke-width: 1px;
+                fill: none;
             }
         </style>
     </head>
@@ -56,11 +57,14 @@
 
         <script>
             var data = {{= JSON.stringify(it.report.getData())}},
+                dataById = {{= JSON.stringify(it.report.getDataById())}},
                 dot = document.getElementById('dot').innerHTML, g = graphlibDot.read(dot),
                 svg = renderGraph('#ngda', g);
 
+            svg.select('g').selectAll('g.cluster rect').style('fill', getClusterFillColor);
             svg.select('g').selectAll('g.node').on('click', openFile);
-            svg.select('g').selectAll('g.node rect, g.node ellipse, g.node polygon').style('fill', getFillColor);
+            svg.select('g').selectAll('g.node rect, g.node ellipse, g.node polygon').style('fill', getNodeFillColor);
+            svg.select('g').selectAll('g.edgePath path, g.node rect').style('display', isVisible);
 
             function renderGraph(svgSelector, g) {
                 var render = new dagreD3.render(), svg = d3.select(svgSelector), svgGroup = svg.append('g');
@@ -76,7 +80,7 @@
             }
 
             function openFile(id) {
-                var fileName = data[id].fileName;
+                var fileName = (dataById[id] || {}).fileName;
 
                 if (fileName) {
                     window.open(replaceFileNamePlaceholder(id));
@@ -87,18 +91,28 @@
                 }
             }
 
-            function getFillColor(id) {
-                var layerColors = {
-                            'app': 'white',
-                            'lib/ui': 'ivory',
-                            'lib/core': 'aliceblue'
-                        },
-                        typeColors = {
+            function getNodeFillColor(id) {
+                var typeColors = {
+                            'module': 'palegoldenrod',
                             'directive': 'mistyrose'
-                        },
-                        itemData = (data[id] || {});
+                        };
 
-                return typeColors[itemData.type] || layerColors[itemData.layer];
+                return typeColors[(dataById[id] || {}).type];
+            }
+
+            function getClusterFillColor(id) {
+                var clusterColors = {
+                            'ui': 'ivory',
+                            'core': 'aliceblue'
+                        };
+
+                return clusterColors[id];
+            }
+
+            function isVisible(id) {
+                var edgeOrNode = g.edge(id) || g.node(id) || {};
+
+                return (edgeOrNode.style === 'invis') && 'none';
             }
         </script>
     </body>

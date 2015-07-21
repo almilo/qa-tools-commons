@@ -6,7 +6,8 @@ exports.Report = function (fileNames, urlTemplate) {
     var asts = fileNames.map(jsParser),
         modules = extractModules(asts, fileNames),
         injectedDependencies = extractDependencies(asts, fileNames),
-        importNameToItem = indexByImportName(modules, injectedDependencies);
+        dataById = indexByImportName(modules, injectedDependencies),
+        data = extractData(dataById);
 
     this.getUrlTemplate = function () {
         return urlTemplate;
@@ -20,9 +21,12 @@ exports.Report = function (fileNames, urlTemplate) {
         return injectedDependencies;
     };
 
+    this.getDataById = function () {
+        return dataById;
+    };
 
     this.getData = function () {
-        return importNameToItem;
+        return data;
     };
 
     this.render = function () {
@@ -33,17 +37,26 @@ exports.Report = function (fileNames, urlTemplate) {
         (renderer || defaultRenderer).apply(undefined, arguments);
     };
 
+    function extractData(dataById) {
+        return _.values(dataById);
+    }
+
     function indexByImportName(modules, injectedDependencies) {
         var importNamesToItem = {};
 
         modules.forEach(addModuleItems);
-        injectedDependencies.forEach(addItem);
+        injectedDependencies.forEach(addInjectedDependencyItems);
 
         return importNamesToItem;
 
         function addModuleItems(module) {
             addItem(module);
             module.provides.forEach(addItem);
+        }
+
+        function addInjectedDependencyItems(injectedDependency) {
+            addItem(injectedDependency);
+            injectedDependency.dependencies.forEach(addItem);
         }
 
         function addItem(item) {

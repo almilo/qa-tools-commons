@@ -58,7 +58,7 @@ function extractModuleDefinition(ast, fileName) {
             });
 
         provides
-            .map(_.partial(createResolvedDependency, importResolver))
+            .map(_.partial(createResolvedDependency, importResolver, layer))
             .filter(isNotUndefined)
             .forEach(function (provide) {
                 module.addProvide(provide);
@@ -69,7 +69,7 @@ function extractModuleDefinition(ast, fileName) {
 }
 
 function extractInjectableDependencies(ast, fileName) {
-    var injectableDependenciesTypesAndNames = [], importResolver = new ImportResolver(fileName);
+    var injectableDependenciesTypesAndNames = [], importResolver = new ImportResolver(fileName), layer = getLayerForFileName(fileName);
 
     estraverse.traverse(ast, {
         enter: function (node) {
@@ -77,23 +77,23 @@ function extractInjectableDependencies(ast, fileName) {
 
             callIfNotFalsy(extractInjectableDependencyNameAndType(node), injectableDependenciesTypesAndNames.push.bind(injectableDependenciesTypesAndNames));
 
-            callIfNotFalsy(extractInjectedController(node), injectableDependenciesTypesAndNames.push.bind(injectableDependenciesTypesAndNames));
+            callIfNotFalsy(extractInjectedController(node, layer), injectableDependenciesTypesAndNames.push.bind(injectableDependenciesTypesAndNames));
         }
     });
 
     return injectableDependenciesTypesAndNames
-        .map(_.partial(createResolvedDependency, importResolver))
+        .map(_.partial(createResolvedDependency, importResolver, layer))
         .filter(isNotUndefined);
 }
 
 function extractInjectedDependencies(injectableDependencies) {
     return function (ast, fileName) {
-        var injectedDependencies = undefined, importName = getImportNameForFileName(fileName);
+        var injectedDependencies = undefined, importName = getImportNameForFileName(fileName), layer = getLayerForFileName(fileName);
 
         estraverse.traverse(ast, {
             enter: function (node) {
                 var injectedDependenciesCandidates = extractFunctionParameterNames(node) ||
-                    asArray((extractInjectedController(node) || {}).name) ||
+                    asArray((extractInjectedController(node, layer) || {}).name) ||
                     [];
 
                 injectedDependenciesCandidates.forEach(function (injectedDependencyCandidate) {
@@ -180,7 +180,7 @@ function extractInjectableDependencyNameAndType(node) {
     return name && {name: name, type: dependencyTypes[calledMember]};
 }
 
-function extractInjectedController(node) {
+function extractInjectedController(node, layer) {
     if (node.type === 'ObjectExpression') {
         var result = node.properties
             .filter(function (property) {
@@ -192,14 +192,14 @@ function extractInjectedController(node) {
 
         assert(result.length <= 1, 'Error, found more that one controller property: + "' + result + '".');
 
-        return result[0] && {name: result[0], type: 'controller'};
+        return result[0] && {name: result[0], type: 'controller', layer: layer};
     }
 }
 
-function createResolvedDependency(importResolver, nameAndType) {
+function createResolvedDependency(importResolver, layer, nameAndType) {
     var importName = importResolver.getImportNameForIdentifier(nameAndType.name);
 
-    return importName && new Dependency(nameAndType.name, nameAndType.type, importName);
+    return importName && new Dependency(nameAndType.name, nameAndType.type, importName, layer);
 }
 
 function callIfNotFalsy(value, fn) {
@@ -213,6 +213,7 @@ function isNotUndefined(item) {
 }
 
 function Module(name, importName, fileName, layer) {
+    this.type = 'module';
     this.name = name;
     this.importName = importName;
     this.fileName = fileName;
@@ -235,10 +236,11 @@ function InjectedDependencies(importName, fileName, dependencies) {
     this.dependencies = dependencies;
 }
 
-function Dependency(name, type, importName) {
+function Dependency(name, type, importName, layer) {
     this.name = name;
     this.type = type;
     this.importName = importName;
+    this.layer = layer;
 }
 
 function getLayerForFileName(fileName) {
