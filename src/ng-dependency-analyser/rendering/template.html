@@ -35,10 +35,6 @@
                 stroke-width: 1px;
             }
 
-            .node[id] {
-                cursor: pointer;
-            }
-
             .edgePath path {
                 stroke: #333;
                 stroke-width: 1px;
@@ -62,7 +58,7 @@
                 svg = renderGraph('#ngda', g);
 
             svg.select('g').selectAll('g.cluster rect').style('fill', getClusterFillColor);
-            svg.select('g').selectAll('g.node').on('click', openFile);
+            svg.select('g').selectAll('g.node').on('click', openFile).style('cursor', 'pointer');
             svg.select('g').selectAll('g.node rect, g.node ellipse, g.node polygon').style('fill', getNodeFillColor);
             svg.select('g').selectAll('g.edgePath path, g.node rect').style('display', isVisible);
 
@@ -87,7 +83,7 @@
                 }
 
                 function replaceFileNamePlaceholder(id) {
-                    return '{{= it.report.getUrlTemplate() || "" }}'.replace('${fileName}', id);
+                    return '{{= it.report.getUrlTemplate() || "" }}'.replace('${fileName}', (dataById[id] || {}).fileName);
                 }
             }
 
