@@ -7,7 +7,7 @@ module.exports = function (report, outputFilename) {
     assert(outputFilename, 'Error: no output file name has been provided to the PNG renderer.');
 
     var templateFile = fs.readFileSync(path.join(__dirname, 'template.dot')),
-        dotTemplate = dot.template(templateFile), tempDotFilename = path.join(shelljs.tempdir(), 'deps.dot'),
+        dotTemplate = dot.template(templateFile), tempDotFilename = path.join(shelljs.tempdir(), 'ngda.dot'),
         dotCommand = 'dot ' + tempDotFilename + ' -Tpng -o' + outputFilename;
 
     fs.writeFileSync(tempDotFilename, dotTemplate(report));
