@@ -1,4 +1,4 @@
-var fs = require('fs'), path = require('path'), _ = require('lodash'), utils = require('../utils'),
+var path = require('path'), _ = require('lodash'), utils = require('../utils'),
     defaultRenderer = require('./rendering/console-renderer');
 
 exports.Report = function (fileNames, query, sorting) {
