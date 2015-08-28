@@ -38,9 +38,7 @@ function queryDependencies(query, fileNames) {
 
         function addMatches(results, dependencyVersion, dependencyName) {
             if (dependencyName.indexOf(query) >= 0) {
-                var dependency = dependencyName + '@' + dependencyVersion;
-
-                results.push(new Dependency(fileNameAndDependencies.fileName, dependency));
+                results.push(new Dependency(fileNameAndDependencies.fileName, dependencyName, dependencyVersion));
             }
 
             return result;
@@ -48,12 +46,16 @@ function queryDependencies(query, fileNames) {
     }
 }
 
-function Dependency(fileName, name) {
+function Dependency(fileName, name, version) {
     this.getFileName = function () {
         return fileName;
     };
 
     this.getName = function () {
         return name;
+    };
+
+    this.getVersion = function () {
+        return version;
     };
 }
