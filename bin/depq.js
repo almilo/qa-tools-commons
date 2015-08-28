@@ -3,19 +3,25 @@
 var yargs = require('yargs'), depq = require('../depq');
 
 var argv = yargs
-    .usage('Usage: $0 -f <files matcher> -q <query>')
-    .array('f')
-    .demand('f')
-    .alias('f', 'files')
-    .describe('f', 'Files to process. It can be one or more files, a shell wildcard or a "glob" matcher (use quotes to avoid the shell expanding it).')
-    .string('q')
-    .demand('q')
-    .alias('q', 'query')
-    .describe('q', 'Query to execute. Typically a text to match partially against the dependency name.')
+    .usage('Usage: $0 -f <files matcher> -q <query> [options]')
+    .option('f', {
+        array: true,
+        demand: true,
+        alias: 'files',
+        describe: 'Files to process. It can be one or more files, a shell wildcard or a "glob" matcher (use quotes to avoid the shell expanding it).'
+    })
+    .option('q', {
+        string: true,
+        demand: true,
+        alias: 'query',
+        describe: 'Query to execute. Typically a text to match partially against the dependency name.'
+    })
+    .string('sorting')
+    .describe('sorting', '"byDependencyName", sorts the result first by dependency name and second by file name. "byFileName", sorts the result first by file name and second by dependency name.')
     .help('h')
     .alias('h', 'help')
     .example('$0 -f "/*/*.package.json" -q "lodash"', 'Processes the files matcher as a "glob" matcher and prints the dependencies which contain "lodash" in the name.')
     .strict()
     .argv;
 
-depq(argv.files, argv.query);
+depq(argv.files, argv.query, argv.sorting);

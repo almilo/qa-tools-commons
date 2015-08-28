@@ -1,22 +1,31 @@
 var AsciiTable = require('ascii-table');
 
 module.exports = function consoleRenderer(report) {
-    var lastFileName, table = new AsciiTable().setHeading('File', 'Dependency', 'Version');
+    var lastDependency, table = new AsciiTable().setHeading('File', 'Dependency', 'Version');
 
     report.getDependencies()
-        .sort(byFileName)
         .forEach(function (dependency) {
-            var currentFileName = dependency.getFileName(),
-                fileName = !lastFileName || lastFileName !== currentFileName ? currentFileName : '';
+            var currentDependency = dependency;
 
-            table.addRow(fileName, dependency.getName(), dependency.getVersion());
+            dependency = filterRepetitions(lastDependency, currentDependency);
+            table.addRow(dependency.fileName, dependency.name, dependency.version);
 
-            lastFileName = currentFileName;
+            lastDependency = currentDependency;
         });
 
     console.log(table.toString());
 };
 
-function byFileName(dependency1, dependency2) {
-    return dependency1.getFileName() < dependency2.getFileName() ? -1 : 1;
+function filterRepetitions(lastDependency, currentDependency) {
+    var placeHolder = '   "   "';
+
+    if (!lastDependency) {
+        return currentDependency
+    } else {
+        return {
+            fileName: lastDependency.fileName !== currentDependency.fileName ? currentDependency.fileName : placeHolder,
+            name: lastDependency.name !== currentDependency.name ? currentDependency.name : placeHolder,
+            version: lastDependency.version !== currentDependency.version ? currentDependency.version : placeHolder
+        };
+    }
 }

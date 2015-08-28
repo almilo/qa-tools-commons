@@ -1,7 +1,7 @@
 var utils = require('../src/utils'), assert = utils.assert, expandFileNames = utils.expandFileNames, asArray = utils.asArray,
     Report = require('../src/dependency-query').Report;
 
-module.exports = function (files, query) {
+module.exports = function (files, query, sorting) {
     assert(files, 'Error, "files" argument is required.');
     assert(query, 'Error, "query" argument is required.');
 
@@ -9,5 +9,5 @@ module.exports = function (files, query) {
 
     var rendererName = 'console', renderer = rendererName && require('../src/dependency-query/rendering/' + rendererName + '-renderer');
 
-    new Report(expandFileNames(files, true), query).render(renderer);
+    new Report(expandFileNames(files, true), query, sorting).render(renderer);
 };

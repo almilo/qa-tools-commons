@@ -1,8 +1,8 @@
 var fs = require('fs'), path = require('path'), _ = require('lodash'), utils = require('../utils'),
     defaultRenderer = require('./rendering/console-renderer');
 
-exports.Report = function (fileNames, query) {
-    var dependencies = queryDependencies(query, fileNames);
+exports.Report = function (fileNames, query, sorting) {
+    var dependencies = queryDependencies(query, fileNames, sorting);
 
     this.getDependencies = function () {
         return dependencies;
@@ -17,10 +17,18 @@ exports.Report = function (fileNames, query) {
     };
 };
 
-function queryDependencies(query, fileNames) {
+function queryDependencies(query, fileNames, sorting) {
+    sorting = sorting || 'byDependencyName';
+
+    var sortings = {
+        byDependencyName: by('name', 'fileName'),
+        byFileName: by('fileName', 'name')
+    };
+
     return fileNames
         .map(toFileNameAndDependencies)
-        .reduce(queryDependencies, []);
+        .reduce(queryDependencies, [])
+        .sort(sortings[sorting]);
 
     function toFileNameAndDependencies(fileName) {
         var absoluteFileName = path.resolve(fileName);
@@ -47,15 +55,20 @@ function queryDependencies(query, fileNames) {
 }
 
 function Dependency(fileName, name, version) {
-    this.getFileName = function () {
-        return fileName;
-    };
+    this.fileName = fileName;
+    this.name = name;
+    this.version = version;
+}
 
-    this.getName = function () {
-        return name;
-    };
+function by(property1, property2) {
+    return function (dependency1, dependency2) {
+        var value1 = dependency1[property1], value2 = dependency2[property1];
 
-    this.getVersion = function () {
-        return version;
-    };
+        if (value1 === value2) {
+            value1 = dependency1[property2];
+            value2 = dependency2[property2];
+        }
+
+        return value1 < value2 ? -1 : 1;
+    }
 }
