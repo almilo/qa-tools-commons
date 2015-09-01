@@ -3,7 +3,7 @@
 var _ = require('lodash'), yargs = require('yargs'), depq = require('../depq');
 
 var argv = yargs
-    .usage('Usage: $0 -f <files matcher> -q <query> [options]')
+    .usage('Usage: $0 -f <files matcher> [-q | -g] <query> [options]')
     .option('f', {
         array: true,
         demand: true,
@@ -31,7 +31,7 @@ var argv = yargs
     .argv;
 
 function argumentsChecker(argv) {
-    if (notExactlyOne(argv.query, argv.graph)) {
+    if (!exactlyOne(argv.query, argv.graph)) {
         throw new Error('Error, use exactly one of -q or -g.');
     }
 
@@ -44,10 +44,10 @@ if (argv.query) {
     depq.graph(argv.files, argv.graph);
 }
 
-function notExactlyOne() {
+function exactlyOne() {
     var total = _.toArray(arguments).reduce(function (sum, argument) {
         return sum + (argument ? 1 : 0);
     }, 0);
 
-    return total !== 1;
+    return total === 1;
 }
