@@ -17,15 +17,19 @@ module.exports = function consoleRenderer(report) {
 };
 
 function filterRepetitions(lastDependency, currentDependency) {
-    var placeHolder = '   "   "';
-
     if (!lastDependency) {
         return currentDependency
     } else {
-        return {
-            referringFileName: lastDependency.referringFileName !== currentDependency.referringFileName ? currentDependency.referringFileName : placeHolder,
-            name: lastDependency.name !== currentDependency.name ? currentDependency.name : placeHolder,
-            version: lastDependency.version !== currentDependency.version ? currentDependency.version : placeHolder
-        };
+        return filterRepeatedFields(lastDependency, currentDependency, ['referringFileName', 'name', 'version']);
+    }
+
+    function filterRepeatedFields(lastDependency, currentDependency, fieldNames) {
+        var placeHolder = '  "  "';
+
+        return fieldNames.reduce(function (result, fieldName) {
+            result[fieldName] = lastDependency[fieldName] !== currentDependency[fieldName] ? currentDependency[fieldName] : placeHolder;
+
+            return result;
+        }, {});
     }
 }
