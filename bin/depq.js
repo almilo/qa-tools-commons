@@ -1,6 +1,6 @@
 #! /usr/bin/env node
 
-var _ = require('lodash'), yargs = require('yargs'), depq = require('../depq');
+var fs = require('fs'), _ = require('lodash'), yargs = require('yargs'), depq = require('../depq');
 
 var argv = yargs
     .usage('Usage: $0 -f <files matcher> [-q | -g] <query> [options]')
@@ -22,6 +22,10 @@ var argv = yargs
     })
     .string('sorting')
     .describe('sorting', '"byDepName", sorts the result first by dependency name and second by file name. "byFileName", sorts the result first by file name and second by dependency name.')
+    .string('png')
+    .describe('png', 'Generates the dependency graph as PNG file.')
+    .boolean('overwrite')
+    .describe('overwrite', 'Overwrites the output file if exists.')
     .help('h')
     .alias('h', 'help')
     .example('$0 -f "/*/package.json" -q "lodash"', 'Processes the files matcher as a "glob" matcher and prints the dependencies whose name contain "lodash".')
@@ -35,13 +39,19 @@ function argumentsChecker(argv) {
         throw new Error('Error, use exactly one of -q or -g.');
     }
 
+    var outputFile = argv.png;
+
+    if (outputFile && fs.existsSync(outputFile) && !argv.overwrite) {
+        throw new Error('Error, the output file: "' + outputFile + '" must not exist or --overwrite option must be set.');
+    }
+
     return true;
 }
 
 if (argv.query) {
     depq.query(argv.files, argv.query, argv.sorting);
 } else {
-    depq.graph(argv.files, argv.graph);
+    depq.graph(argv.files, argv.graph, argv.png && 'png', argv.png, argv.overwrite);
 }
 
 function exactlyOne() {

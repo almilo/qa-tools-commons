@@ -1,0 +1,8 @@
+digraph depq {
+  {{~it :dependency}}
+    "{{= dependency.name}}" [label="{{= dependency.name}} ({{= dependency.version}})"]
+    {{~dependency.dependencies :subDependency}}
+    "{{= dependency.name}}" -> "{{= subDependency }}"
+    {{~}}
+  {{~}}
+}

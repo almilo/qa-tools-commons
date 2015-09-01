@@ -1,4 +1,5 @@
 var path = require('path'), _ = require('lodash'), utils = require('../utils'),
+    model = require('./model'), Dependency = model.Dependency, ChildDependency = model.ChildDependency,
     defaultTableRenderer = require('./rendering/table-console-renderer'),
     defaultGraphRenderer = require('./rendering/graph-console-renderer');
 
@@ -33,7 +34,7 @@ exports.GraphReport = function (fileNames, query) {
 
     var dependencies = executeQuery(fileNames, addMatchingDependency);
 
-    return new Report(toGraphDependencies(dependencies), defaultGraphRenderer);
+    return new Report(dependencies, defaultGraphRenderer);
 
     function addMatchingDependency(dependenciesAccumulator, dependency) {
         if (matches(dependency.name)) {
@@ -56,48 +57,6 @@ exports.GraphReport = function (fileNames, query) {
 
         function matches(dependencyName) {
             return query === '*' || dependencyName.indexOf(query) >= 0;
-        }
-    }
-
-    function toGraphDependencies(allDependencies) {
-        var allDependenciesIndex = _.indexBy(allDependencies, 'name'), nonTopDependencyNames = [];
-
-        return allDependencies
-            .map(function (dependency) {
-                return new Dependency(
-                    dependency.name,
-                    dependency.version,
-                    resolveDependencies(dependency.dependencies, allDependenciesIndex, nonTopDependencyNames),
-                    dependency.fileName
-                );
-            })
-            .filter(function (dependency) {
-                return nonTopDependencyNames.indexOf(dependency.name) < 0;
-            });
-
-        function resolveDependencies(flatDependencies, allDependenciesIndex, nonTopDependencyNames) {
-            return _.reduce(flatDependencies, function (resolvedDependencies, flatDependencyVersion, flatDependencyName) {
-                var childDependency = allDependenciesIndex[flatDependencyName], resolvedDependency;
-
-                if (childDependency) {
-                    resolvedDependency = new Dependency(
-                        childDependency.name,
-                        childDependency.version,
-                        resolveDependencies(childDependency.dependencies, allDependenciesIndex, nonTopDependencyNames),
-                        childDependency.fileName
-                    );
-
-                    if (nonTopDependencyNames.indexOf(childDependency.name) < 0) {
-                        nonTopDependencyNames.push(childDependency.name);
-                    }
-                } else {
-                    resolvedDependency = new ChildDependency('', flatDependencyName, flatDependencyVersion);
-                }
-
-                resolvedDependencies.push(resolvedDependency);
-
-                return resolvedDependencies;
-            }, []);
         }
     }
 };
@@ -128,19 +87,6 @@ function Report(dependencies, defaultRenderer) {
 
         (renderer || defaultRenderer).apply(undefined, arguments);
     };
-}
-
-function ChildDependency(referringFileName, name, version) {
-    this.referringFileName = referringFileName;
-    this.name = name;
-    this.version = version;
-}
-
-function Dependency(name, version, dependencies, fileName) {
-    this.name = name;
-    this.version = version;
-    this.dependencies = dependencies;
-    this.fileName = fileName;
 }
 
 function by(property1, property2) {
