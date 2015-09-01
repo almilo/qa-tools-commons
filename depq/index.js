@@ -8,7 +8,7 @@ exports.query = function (files, query, sorting) {
 
     files = asArray(files);
 
-    var rendererName = 'console', renderer = rendererName && require('../src/dependency-query/rendering/' + rendererName + '-renderer');
+    var rendererName = 'console', renderer = rendererName && require('../src/dependency-query/rendering/table-' + rendererName + '-renderer');
 
     new QueryReport(expandFileNames(files, true), query, sorting).render(renderer);
 };
@@ -19,7 +19,7 @@ exports.graph = function (files, query) {
 
     files = asArray(files);
 
-    var rendererName = 'console', renderer = rendererName && require('../src/dependency-query/rendering/' + rendererName + '-renderer');
+    var rendererName = 'console', renderer = rendererName && require('../src/dependency-query/rendering/graph-' + rendererName + '-renderer');
 
     new GraphReport(expandFileNames(files, true), query).render(renderer);
 };
