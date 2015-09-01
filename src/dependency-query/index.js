@@ -2,11 +2,13 @@ var path = require('path'), _ = require('lodash'), utils = require('../utils'),
     defaultRenderer = require('./rendering/console-renderer');
 
 exports.QueryReport = function (fileNames, query, sorting) {
+    query = query.trim();
+
     var sortings = {
-            byDependencyName: by('name', 'fileName'),
+            byDepName: by('name', 'fileName'),
             byFileName: by('fileName', 'name')
         },
-        dependencies = executeQuery(fileNames, addMatchingChildDependencies, sorting || 'byDependencyName', sortings);
+        dependencies = executeQuery(fileNames, addMatchingChildDependencies, sorting || 'byDepName', sortings);
 
     return new Report(dependencies);
 
@@ -16,7 +18,7 @@ exports.QueryReport = function (fileNames, query, sorting) {
         return childDependenciesAccumulator;
 
         function match(dependencyVersion, dependencyName) {
-            if (dependencyName.indexOf(query) >= 0) {
+            if (query === '*' || dependencyName.indexOf(query) >= 0) {
                 var childDependency = new ChildDependency(dependency.fileName, dependencyName, dependencyVersion);
 
                 childDependenciesAccumulator.push(childDependency);
@@ -26,6 +28,8 @@ exports.QueryReport = function (fileNames, query, sorting) {
 };
 
 exports.GraphReport = function (fileNames, query, sorting) {
+    query = query.trim();
+
     var sortings = {
             byDependencyChain: byInterDependency
         },
@@ -34,7 +38,7 @@ exports.GraphReport = function (fileNames, query, sorting) {
     return new Report(dependencies);
 
     function addMatchingDependency(dependenciesAccumulator, dependency) {
-        if (dependency.name.indexOf(query) >= 0) {
+        if (query === '*' || dependency.name.indexOf(query) >= 0) {
             dependenciesAccumulator.push(dependency);
         }
 
