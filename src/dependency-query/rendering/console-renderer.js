@@ -1,10 +1,13 @@
 var AsciiTable = require('ascii-table');
 
 module.exports = function consoleRenderer(report) {
-    var lastDependency, table = new AsciiTable().setHeading('File', 'Dependency', 'Version');
+    var lastDependency, table = new AsciiTable().setHeading('File', 'Dependency', 'Version'),
+        dependencies = report.getDependencies();
 
-    report.getDependencies()
-        .forEach(function (dependency) {
+    if (dependencies.length === 0) {
+        console.log('No matching results found.');
+    } else {
+        dependencies.forEach(function (dependency) {
             var currentDependency = dependency;
 
             dependency = filterRepetitions(lastDependency, currentDependency);
@@ -13,7 +16,8 @@ module.exports = function consoleRenderer(report) {
             lastDependency = currentDependency;
         });
 
-    console.log(table.toString());
+        console.log(table.toString());
+    }
 };
 
 function filterRepetitions(lastDependency, currentDependency) {
