@@ -14,13 +14,13 @@ var argv = yargs
         string: true,
         demand: true,
         alias: 'query',
-        describe: 'Query to execute. Typically a text to match partially against the dependency name.'
+        describe: 'Query to execute. Typically a text to match partially against the dependency name. If it is the "*" wildcard, then any dependency will be matched.'
     })
     .string('sorting')
-    .describe('sorting', '"byDependencyName", sorts the result first by dependency name and second by file name. "byFileName", sorts the result first by file name and second by dependency name.')
+    .describe('sorting', '"byDepName", sorts the result first by dependency name and second by file name. "byFileName", sorts the result first by file name and second by dependency name.')
     .help('h')
     .alias('h', 'help')
-    .example('$0 -f "/*/*.package.json" -q "lodash"', 'Processes the files matcher as a "glob" matcher and prints the dependencies which contain "lodash" in the name.')
+    .example('$0 -f "/*/package.json" -q "lodash"', 'Processes the files matcher as a "glob" matcher and prints the dependencies whose name contain "lodash".')
     .strict()
     .argv;
 

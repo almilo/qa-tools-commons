@@ -18,10 +18,11 @@ exports.Report = function (fileNames, query, sorting) {
 };
 
 function queryDependencies(query, fileNames, sorting) {
-    sorting = sorting || 'byDependencyName';
+    query = query.trim();
+    sorting = sorting || 'byDepName';
 
     var sortings = {
-        byDependencyName: by('name', 'fileName'),
+        byDepName: by('name', 'fileName'),
         byFileName: by('fileName', 'name')
     };
 
@@ -45,7 +46,7 @@ function queryDependencies(query, fileNames, sorting) {
         return result;
 
         function addMatches(results, dependencyVersion, dependencyName) {
-            if (dependencyName.indexOf(query) >= 0) {
+            if (query === '*' || dependencyName.indexOf(query) >= 0) {
                 results.push(new Dependency(fileNameAndDependencies.fileName, dependencyName, dependencyVersion));
             }
 
