@@ -1,9 +1,61 @@
 var path = require('path'), _ = require('lodash'), utils = require('../utils'),
     defaultRenderer = require('./rendering/console-renderer');
 
-exports.Report = function (fileNames, query, sorting) {
-    var dependencies = queryDependencies(query, fileNames, sorting);
+exports.QueryReport = function (fileNames, query, sorting) {
+    var sortings = {
+            byDependencyName: by('name', 'fileName'),
+            byFileName: by('fileName', 'name')
+        },
+        dependencies = executeQuery(fileNames, addMatchingChildDependencies, sorting || 'byDependencyName', sortings);
 
+    return new Report(dependencies);
+
+    function addMatchingChildDependencies(childDependenciesAccumulator, dependency) {
+        _.forEach(dependency.dependencies, match);
+
+        return childDependenciesAccumulator;
+
+        function match(dependencyVersion, dependencyName) {
+            if (dependencyName.indexOf(query) >= 0) {
+                var childDependency = new ChildDependency(dependency.fileName, dependencyName, dependencyVersion);
+
+                childDependenciesAccumulator.push(childDependency);
+            }
+        }
+    }
+};
+
+exports.GraphReport = function (fileNames, query, sorting) {
+    var sortings = {
+            byDependencyChain: byInterDependency
+        },
+        dependencies = executeQuery(fileNames, addMatchingDependency, sorting || 'byDependencyChain', sortings);
+
+    return new Report(dependencies);
+
+    function addMatchingDependency(dependenciesAccumulator, dependency) {
+        if (dependency.name.indexOf(query) >= 0) {
+            dependenciesAccumulator.push(dependency);
+        }
+
+        return dependenciesAccumulator;
+    }
+};
+
+function executeQuery(fileNames, queryCallback, sorting, sortings) {
+    return fileNames
+        .map(asDependency)
+        .reduce(queryCallback, [])
+        .sort(sortings[sorting]);
+}
+
+function asDependency(fileName) {
+    var absoluteFileName = path.resolve(fileName), dependency = require(absoluteFileName);
+
+    return new Dependency(dependency.name, dependency.dependencies, fileName);
+}
+
+function Report(dependencies) {
     this.getDependencies = function () {
         return dependencies;
     };
@@ -15,49 +67,18 @@ exports.Report = function (fileNames, query, sorting) {
 
         (renderer || defaultRenderer).apply(undefined, arguments);
     };
-};
-
-function queryDependencies(query, fileNames, sorting) {
-    sorting = sorting || 'byDependencyName';
-
-    var sortings = {
-        byDependencyName: by('name', 'fileName'),
-        byFileName: by('fileName', 'name')
-    };
-
-    return fileNames
-        .map(toFileNameAndDependencies)
-        .reduce(queryDependencies, [])
-        .sort(sortings[sorting]);
-
-    function toFileNameAndDependencies(fileName) {
-        var absoluteFileName = path.resolve(fileName);
-
-        return {
-            fileName: fileName,
-            dependencies: require(absoluteFileName).dependencies
-        };
-    }
-
-    function queryDependencies(result, fileNameAndDependencies) {
-        result.concat(_.reduce(fileNameAndDependencies.dependencies, addMatches, []));
-
-        return result;
-
-        function addMatches(results, dependencyVersion, dependencyName) {
-            if (dependencyName.indexOf(query) >= 0) {
-                results.push(new Dependency(fileNameAndDependencies.fileName, dependencyName, dependencyVersion));
-            }
-
-            return result;
-        }
-    }
 }
 
-function Dependency(fileName, name, version) {
-    this.fileName = fileName;
+function ChildDependency(referringFileName, name, version) {
+    this.referringFileName = referringFileName;
     this.name = name;
     this.version = version;
+}
+
+function Dependency(name, dependencies, fileName) {
+    this.name = name;
+    this.dependencies = dependencies;
+    this.fileName = fileName;
 }
 
 function by(property1, property2) {
@@ -71,4 +92,17 @@ function by(property1, property2) {
 
         return value1 < value2 ? -1 : 1;
     }
+}
+
+function byInterDependency(dependency1, dependency2) {
+    var dependencies1 = _.keys(dependency1.dependencies),
+        dependencies2 = _.keys(dependency2.dependencies);
+
+    if (_.includes(dependencies1, dependency2.name)) {
+        return 1;
+    }
+    if (_.includes(dependencies2, dependency1.name)) {
+        return -1;
+    }
+    return 0;
 }

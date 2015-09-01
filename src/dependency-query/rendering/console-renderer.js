@@ -8,7 +8,7 @@ module.exports = function consoleRenderer(report) {
             var currentDependency = dependency;
 
             dependency = filterRepetitions(lastDependency, currentDependency);
-            table.addRow(dependency.fileName, dependency.name, dependency.version);
+            table.addRow(dependency.referringFileName, dependency.name, dependency.version);
 
             lastDependency = currentDependency;
         });
@@ -23,7 +23,7 @@ function filterRepetitions(lastDependency, currentDependency) {
         return currentDependency
     } else {
         return {
-            fileName: lastDependency.fileName !== currentDependency.fileName ? currentDependency.fileName : placeHolder,
+            referringFileName: lastDependency.referringFileName !== currentDependency.referringFileName ? currentDependency.referringFileName : placeHolder,
             name: lastDependency.name !== currentDependency.name ? currentDependency.name : placeHolder,
             version: lastDependency.version !== currentDependency.version ? currentDependency.version : placeHolder
         };

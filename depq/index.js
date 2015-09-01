@@ -1,7 +1,8 @@
 var utils = require('../src/utils'), assert = utils.assert, expandFileNames = utils.expandFileNames, asArray = utils.asArray,
-    Report = require('../src/dependency-query').Report;
+    dependencyQuery = require('../src/dependency-query'), QueryReport = dependencyQuery.QueryReport,
+    GraphReport = dependencyQuery.GraphReport;
 
-module.exports = function (files, query, sorting) {
+exports.query = function (files, query, sorting) {
     assert(files, 'Error, "files" argument is required.');
     assert(query, 'Error, "query" argument is required.');
 
@@ -9,5 +10,16 @@ module.exports = function (files, query, sorting) {
 
     var rendererName = 'console', renderer = rendererName && require('../src/dependency-query/rendering/' + rendererName + '-renderer');
 
-    new Report(expandFileNames(files, true), query, sorting).render(renderer);
+    new QueryReport(expandFileNames(files, true), query, sorting).render(renderer);
+};
+
+exports.graph = function (files, query) {
+    assert(files, 'Error, "files" argument is required.');
+    assert(query, 'Error, "query" argument is required.');
+
+    files = asArray(files);
+
+    var rendererName = 'console', renderer = rendererName && require('../src/dependency-query/rendering/' + rendererName + '-renderer');
+
+    new GraphReport(expandFileNames(files, true), query).render(renderer);
 };

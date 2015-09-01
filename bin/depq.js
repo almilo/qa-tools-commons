@@ -1,6 +1,6 @@
 #! /usr/bin/env node
 
-var yargs = require('yargs'), depq = require('../depq');
+var _ = require('lodash'), yargs = require('yargs'), depq = require('../depq');
 
 var argv = yargs
     .usage('Usage: $0 -f <files matcher> -q <query> [options]')
@@ -12,16 +12,42 @@ var argv = yargs
     })
     .option('q', {
         string: true,
-        demand: true,
         alias: 'query',
         describe: 'Query to execute. Typically a text to match partially against the dependency name.'
+    })
+    .option('g', {
+        string: true,
+        alias: 'graph',
+        describe: 'Create a graph of dependencies.'
     })
     .string('sorting')
     .describe('sorting', '"byDependencyName", sorts the result first by dependency name and second by file name. "byFileName", sorts the result first by file name and second by dependency name.')
     .help('h')
     .alias('h', 'help')
     .example('$0 -f "/*/*.package.json" -q "lodash"', 'Processes the files matcher as a "glob" matcher and prints the dependencies which contain "lodash" in the name.')
+    .example('$0 -f "/*/*.package.json" -g "acme"', 'Processes the files matcher as a "glob" matcher and prints the dependency graph of the dependencies which contain "acme" in the name.')
     .strict()
+    .check(argumentsChecker)
     .argv;
 
-depq(argv.files, argv.query, argv.sorting);
+function argumentsChecker(argv) {
+    if (notExactlyOne(argv.query, argv.graph)) {
+        throw new Error('Error, use exactly one of -q or -g.');
+    }
+
+    return true;
+}
+
+if (argv.query) {
+    depq.query(argv.files, argv.query, argv.sorting);
+} else {
+    depq.graph(argv.files, argv.graph);
+}
+
+function notExactlyOne() {
+    var total = _.toArray(arguments).reduce(function (sum, argument) {
+        return sum + (argument ? 1 : 0);
+    }, 0);
+
+    return total !== 1;
+}
