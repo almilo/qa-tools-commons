@@ -4,10 +4,12 @@ var fs = require('fs'), _ = require('lodash'), yargs = require('yargs'), ngda = 
 
 var argv = yargs
     .usage('Usage: $0 -f <files matcher> [options]')
-    .array('f')
-    .demand('f')
-    .alias('f', 'files')
-    .describe('f', 'Files to process. It can be one or more files, a shell wildcard or a "glob" matcher (use quotes to avoid the shell expanding it).')
+    .option('f', {
+        array: true,
+        demand: true,
+        alias: 'files',
+        describe: 'Files to process. It can be one or more files, a shell wildcard or a "glob" matcher (use quotes to avoid the shell expanding it).'
+    })
     .string('dot')
     .describe('dot', 'Generates the dependency graph as graphviz dot file.')
     .string('png')
